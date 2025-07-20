@@ -421,3 +421,460 @@ func TestUSStreetAddressExtraction(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractContext(t *testing.T) {
+	tests := []struct {
+		name     string
+		text     string
+		start    int
+		end      int
+		expected string
+	}{
+		{
+			name:     "extract complete sentence",
+			text:     "This is the first sentence. Contact me at john@example.com for details. This is the last sentence.",
+			start:    39,
+			end:      55,
+			expected: "Contact me at john@example.com for details.",
+		},
+		{
+			name:     "extract from beginning of text",
+			text:     "Email john@example.com today! More text follows.",
+			start:    6,
+			end:      22,
+			expected: "Email john@example.com today!",
+		},
+		{
+			name:     "extract from end of text",
+			text:     "Please send the report to admin@company.org",
+			start:    26,
+			end:      43,
+			expected: "Please send the report to admin@company.org",
+		},
+		{
+			name:     "fallback to word context when no sentence boundaries",
+			text:     "word1 word2 word3 word4 word5 john@example.com word6 word7 word8 word9 word10 word11 word12 word13",
+			start:    30,
+			end:      46,
+			expected: "word1 word2 word3 word4 word5 john@example.com word6 word7 word8 word9 word10 word11 word12 word13",
+		},
+		{
+			name:     "handle match at text boundaries",
+			text:     "john@example.com",
+			start:    0,
+			end:      16,
+			expected: "john@example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractContext(tt.text, tt.start, tt.end)
+			if result != tt.expected {
+				t.Errorf("extractContext() = %q, expected %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestExtractSentence(t *testing.T) {
+	tests := []struct {
+		name     string
+		text     string
+		start    int
+		end      int
+		expected string
+	}{
+		{
+			name:     "middle sentence with periods",
+			text:     "First sentence. Middle sentence with match. Last sentence.",
+			start:    25,
+			end:      30,
+			expected: "Middle sentence with match.",
+		},
+		{
+			name:     "sentence with exclamation mark",
+			text:     "Call me today! My number is 555-1234. Thanks!",
+			start:    28,
+			end:      37,
+			expected: "My number is 555-1234. Thanks!",
+		},
+		{
+			name:     "sentence with question mark",
+			text:     "What is your email? Is it john@example.com? Let me know.",
+			start:    26,
+			end:      42,
+			expected: "Is it john@example.com?",
+		},
+		{
+			name:     "start of text without sentence boundary",
+			text:     "john@example.com is my email address. More text here.",
+			start:    0,
+			end:      16,
+			expected: "john@example.com is my email address.",
+		},
+		{
+			name:     "end of text without sentence boundary",
+			text:     "Please contact me at admin@company.org",
+			start:    21,
+			end:      38,
+			expected: "Please contact me at admin@company.org",
+		},
+		{
+			name:     "no sentence boundaries found",
+			text:     "just some words without punctuation",
+			start:    5,
+			end:      9,
+			expected: "just some words without punctuation",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractSentence(tt.text, tt.start, tt.end)
+			if result != tt.expected {
+				t.Errorf("extractSentence() = %q, expected %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestExtractWordContext(t *testing.T) {
+	tests := []struct {
+		name     string
+		text     string
+		start    int
+		end      int
+		expected string
+	}{
+		{
+			name:     "extract 8 words before and after",
+			text:     "w1 w2 w3 w4 w5 w6 w7 w8 w9 match w10 w11 w12 w13 w14 w15 w16 w17 w18",
+			start:    30,
+			end:      35,
+			expected: "w2 w3 w4 w5 w6 w7 w8 w9 match w10 w11 w12 w13 w14 w15 w16 w17 w18",
+		},
+		{
+			name:     "less than 8 words before",
+			text:     "w1 w2 w3 match w4 w5 w6 w7 w8 w9 w10 w11 w12",
+			start:    9,
+			end:      14,
+			expected: "w1 w2 w3 match w4 w5 w6 w7 w8 w9 w10 w11",
+		},
+		{
+			name:     "less than 8 words after",
+			text:     "w1 w2 w3 w4 w5 w6 w7 w8 w9 match w10 w11 w12",
+			start:    30,
+			end:      35,
+			expected: "w2 w3 w4 w5 w6 w7 w8 w9 match w10 w11 w12",
+		},
+		{
+			name:     "single word match",
+			text:     "match",
+			start:    0,
+			end:      5,
+			expected: "match",
+		},
+		{
+			name:     "email address in sentence",
+			text:     "Please send the report to john@example.com by tomorrow",
+			start:    26,
+			end:      42,
+			expected: "Please send the report to john@example.com by tomorrow",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractWordContext(tt.text, tt.start, tt.end)
+			if result != tt.expected {
+				t.Errorf("extractWordContext() = %q, expected %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestExtractPhonesUS(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         string
+		expectedCount int
+		expectedValue string
+		expectedCtx   string
+		expectedOccur int
+	}{
+		{
+			name:          "single phone with context",
+			input:         "Please call me at (555) 123-4567 for urgent matters.",
+			expectedCount: 1,
+			expectedValue: "(555) 123-4567",
+			expectedCtx:   "Please call me at (555) 123-4567 for urgent matters.",
+			expectedOccur: 1,
+		},
+		{
+			name:          "multiple occurrences of same phone",
+			input:         "Call 555-123-4567 for support. Emergency line: 555-123-4567. The number 555-123-4567 is available 24/7.",
+			expectedCount: 1,
+			expectedValue: "555-123-4567",
+			expectedCtx:   "Call 555-123-4567 for support.",
+			expectedOccur: 3,
+		},
+		{
+			name:          "multiple different phones",
+			input:         "Home: (555) 123-4567. Work: 555.987.6543. Mobile: +1 555 111 2222.",
+			expectedCount: 3,
+			expectedValue: "",
+			expectedCtx:   "",
+			expectedOccur: 1,
+		},
+		{
+			name:          "phone with sentence context",
+			input:         "Our customer service team is available! You can reach us at 555-123-4567 or email support@company.com. We're here to help!",
+			expectedCount: 1,
+			expectedValue: "555-123-4567",
+			expectedCtx:   "You can reach us at 555-123-4567 or email support@company.",
+			expectedOccur: 1,
+		},
+		{
+			name:          "no phones in text",
+			input:         "This text contains no phone numbers at all.",
+			expectedCount: 0,
+			expectedValue: "",
+			expectedCtx:   "",
+			expectedOccur: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractPhonesUS(tt.input)
+			
+			if len(result) != tt.expectedCount {
+				t.Errorf("ExtractPhonesUS() returned %d phones, expected %d", len(result), tt.expectedCount)
+				return
+			}
+			
+			if tt.expectedCount == 0 {
+				return
+			}
+			
+			if tt.expectedCount == 1 {
+				phone := result[0]
+				if phone.Value != tt.expectedValue {
+					t.Errorf("ExtractPhonesUS() phone value = %q, expected %q", phone.Value, tt.expectedValue)
+				}
+				if phone.Count != tt.expectedOccur {
+					t.Errorf("ExtractPhonesUS() phone count = %d, expected %d", phone.Count, tt.expectedOccur)
+				}
+				if phone.Country != "US" {
+					t.Errorf("ExtractPhonesUS() phone country = %q, expected %q", phone.Country, "US")
+				}
+				if len(phone.Contexts) > 0 && tt.expectedCtx != "" && phone.Contexts[0] != tt.expectedCtx {
+					t.Errorf("ExtractPhonesUS() phone context = %q, expected %q", phone.Contexts[0], tt.expectedCtx)
+				}
+			}
+			
+			if tt.expectedCount > 1 {
+				for _, phone := range result {
+					if phone.Country != "US" {
+						t.Errorf("ExtractPhonesUS() phone country = %q, expected %q", phone.Country, "US")
+					}
+					if phone.Count != 1 {
+						t.Errorf("ExtractPhonesUS() phone count = %d, expected %d", phone.Count, 1)
+					}
+					if len(phone.Contexts) == 0 {
+						t.Errorf("ExtractPhonesUS() phone contexts should not be empty")
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestExtractEmails(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         string
+		expectedCount int
+		expectedValue string
+		expectedCtx   string
+		expectedOccur int
+	}{
+		{
+			name:          "single email with context",
+			input:         "Please contact me at john.doe@example.com for more information.",
+			expectedCount: 1,
+			expectedValue: "john.doe@example.com",
+			expectedCtx:   "Please contact me at john.doe@example.com for more information.",
+			expectedOccur: 1,
+		},
+		{
+			name:          "multiple occurrences of same email",
+			input:         "Send reports to admin@company.org. CC admin@company.org on all emails! Important: admin@company.org must be notified.",
+			expectedCount: 1,
+			expectedValue: "admin@company.org",
+			expectedCtx:   "Send reports to admin@company.org.",
+			expectedOccur: 3,
+		},
+		{
+			name:          "multiple different emails",
+			input:         "Support: help@company.com. Sales: sales@company.com. Admin: admin@company.com.",
+			expectedCount: 3,
+			expectedValue: "",
+			expectedCtx:   "",
+			expectedOccur: 1,
+		},
+		{
+			name:          "email with sentence context",
+			input:         "Welcome to our service! Please verify your account by clicking the link sent to user123@domain.co.uk. Thank you for joining us!",
+			expectedCount: 1,
+			expectedValue: "user123@domain.co.uk",
+			expectedCtx:   "Please verify your account by clicking the link sent to user123@domain.co.uk.",
+			expectedOccur: 1,
+		},
+		{
+			name:          "no emails in text",
+			input:         "This text contains no email addresses whatsoever.",
+			expectedCount: 0,
+			expectedValue: "",
+			expectedCtx:   "",
+			expectedOccur: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractEmails(tt.input)
+			
+			if len(result) != tt.expectedCount {
+				t.Errorf("ExtractEmails() returned %d emails, expected %d", len(result), tt.expectedCount)
+				return
+			}
+			
+			if tt.expectedCount == 0 {
+				return
+			}
+			
+			if tt.expectedCount == 1 {
+				email := result[0]
+				if email.Value != tt.expectedValue {
+					t.Errorf("ExtractEmails() email value = %q, expected %q", email.Value, tt.expectedValue)
+				}
+				if email.Count != tt.expectedOccur {
+					t.Errorf("ExtractEmails() email count = %d, expected %d", email.Count, tt.expectedOccur)
+				}
+				if len(email.Contexts) > 0 && tt.expectedCtx != "" && email.Contexts[0] != tt.expectedCtx {
+					t.Errorf("ExtractEmails() email context = %q, expected %q", email.Contexts[0], tt.expectedCtx)
+				}
+			}
+			
+			if tt.expectedCount > 1 {
+				for _, email := range result {
+					if email.Count != 1 {
+						t.Errorf("ExtractEmails() email count = %d, expected %d", email.Count, 1)
+					}
+					if len(email.Contexts) == 0 {
+						t.Errorf("ExtractEmails() email contexts should not be empty")
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestExtractSSNsUS(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         string
+		expectedCount int
+		expectedValue string
+		expectedCtx   string
+		expectedOccur int
+	}{
+		{
+			name:          "single SSN with context",
+			input:         "Employee Social Security Number: 123-45-6789 for tax records.",
+			expectedCount: 1,
+			expectedValue: "123-45-6789",
+			expectedCtx:   "Employee Social Security Number: 123-45-6789 for tax records.",
+			expectedOccur: 1,
+		},
+		{
+			name:          "multiple occurrences of same SSN",
+			input:         "SSN 555-44-3333 was entered. Please verify 555-44-3333 is correct. Confirm: 555-44-3333.",
+			expectedCount: 1,
+			expectedValue: "555-44-3333",
+			expectedCtx:   "SSN 555-44-3333 was entered.",
+			expectedOccur: 3,
+		},
+		{
+			name:          "multiple different SSNs",
+			input:         "Employee 1: 123-45-6789. Employee 2: 987-65-4321. Manager: 555-44-3333.",
+			expectedCount: 3,
+			expectedValue: "",
+			expectedCtx:   "",
+			expectedOccur: 1,
+		},
+		{
+			name:          "SSN with sentence context",
+			input:         "Please update your records! The new SSN is 999-88-7777 effective immediately. Contact HR for questions.",
+			expectedCount: 1,
+			expectedValue: "999-88-7777",
+			expectedCtx:   "The new SSN is 999-88-7777 effective immediately.",
+			expectedOccur: 1,
+		},
+		{
+			name:          "no SSNs in text",
+			input:         "This document contains no social security numbers.",
+			expectedCount: 0,
+			expectedValue: "",
+			expectedCtx:   "",
+			expectedOccur: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractSSNsUS(tt.input)
+			
+			if len(result) != tt.expectedCount {
+				t.Errorf("ExtractSSNsUS() returned %d SSNs, expected %d", len(result), tt.expectedCount)
+				return
+			}
+			
+			if tt.expectedCount == 0 {
+				return
+			}
+			
+			if tt.expectedCount == 1 {
+				ssn := result[0]
+				if ssn.Value != tt.expectedValue {
+					t.Errorf("ExtractSSNsUS() SSN value = %q, expected %q", ssn.Value, tt.expectedValue)
+				}
+				if ssn.Count != tt.expectedOccur {
+					t.Errorf("ExtractSSNsUS() SSN count = %d, expected %d", ssn.Count, tt.expectedOccur)
+				}
+				if ssn.Country != "US" {
+					t.Errorf("ExtractSSNsUS() SSN country = %q, expected %q", ssn.Country, "US")
+				}
+				if len(ssn.Contexts) > 0 && tt.expectedCtx != "" && ssn.Contexts[0] != tt.expectedCtx {
+					t.Errorf("ExtractSSNsUS() SSN context = %q, expected %q", ssn.Contexts[0], tt.expectedCtx)
+				}
+			}
+			
+			if tt.expectedCount > 1 {
+				for _, ssn := range result {
+					if ssn.Country != "US" {
+						t.Errorf("ExtractSSNsUS() SSN country = %q, expected %q", ssn.Country, "US")
+					}
+					if ssn.Count != 1 {
+						t.Errorf("ExtractSSNsUS() SSN count = %d, expected %d", ssn.Count, 1)
+					}
+					if len(ssn.Contexts) == 0 {
+						t.Errorf("ExtractSSNsUS() SSN contexts should not be empty")
+					}
+				}
+			}
+		})
+	}
+}

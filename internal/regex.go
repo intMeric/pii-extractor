@@ -1,6 +1,10 @@
 package internal
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+	"unicode"
+)
 
 const (
 	// US-specific patterns
@@ -53,197 +57,389 @@ func match(text string, regex *regexp.Regexp) []string {
 	return parsed
 }
 
+// matchWithIndices returns matches along with their start and end positions
+func matchWithIndices(text string, regex *regexp.Regexp) [][]int {
+	return regex.FindAllStringIndex(text, -1)
+}
+
+// extractContext extracts the context around a match, prioritizing full sentences over word count
+func extractContext(text string, start, end int) string {
+	// First try to find a complete sentence
+	sentence := extractSentence(text, start, end)
+	if sentence != "" {
+		return strings.TrimSpace(sentence)
+	}
+
+	// Fallback to 8 words before and after
+	return extractWordContext(text, start, end)
+}
+
+// extractSentence tries to extract a complete sentence containing the match
+func extractSentence(text string, start, end int) string {
+	// Find sentence boundaries (., !, ?, or start/end of text)
+	sentenceStart := start
+	sentenceEnd := end
+
+	// Look backwards for sentence start
+	for i := start - 1; i >= 0; i-- {
+		char := text[i]
+		if char == '.' || char == '!' || char == '?' {
+			sentenceStart = i + 1
+			break
+		}
+		if i == 0 {
+			sentenceStart = 0
+		}
+	}
+
+	// Look forwards for sentence end
+	for i := end; i < len(text); i++ {
+		char := text[i]
+		if char == '.' || char == '!' || char == '?' {
+			sentenceEnd = i + 1
+			break
+		}
+		if i == len(text)-1 {
+			sentenceEnd = len(text)
+		}
+	}
+
+	// Skip whitespace at the beginning
+	for sentenceStart < len(text) && unicode.IsSpace(rune(text[sentenceStart])) {
+		sentenceStart++
+	}
+
+	if sentenceStart < sentenceEnd && sentenceEnd <= len(text) {
+		return text[sentenceStart:sentenceEnd]
+	}
+
+	return ""
+}
+
+// extractWordContext extracts 8 words before and after the match
+func extractWordContext(text string, start, end int) string {
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return ""
+	}
+
+	// Find the word index that contains our match
+	wordStart := -1
+	wordEnd := -1
+	currentPos := 0
+
+	for i, word := range words {
+		wordStartPos := strings.Index(text[currentPos:], word) + currentPos
+		wordEndPos := wordStartPos + len(word)
+
+		if wordStartPos <= start && start < wordEndPos {
+			wordStart = i
+		}
+		if wordStartPos < end && end <= wordEndPos {
+			wordEnd = i
+		}
+
+		currentPos = wordEndPos
+
+		if wordStart != -1 && wordEnd != -1 {
+			break
+		}
+	}
+
+	if wordStart == -1 || wordEnd == -1 {
+		return ""
+	}
+
+	// Extract 8 words before and after
+	contextStart := max(0, wordStart-8)
+	contextEnd := min(len(words), wordEnd+8+1)
+
+	return strings.Join(words[contextStart:contextEnd], " ")
+}
+
 // US-specific convenience functions
-func PhonesUS(text string) []string {
-	return match(text, PhoneUSRegex)
-}
-
-func PhonesWithExtsUS(text string) []string {
-	return match(text, PhonesWithExtsUSRegex)
-}
-
-func StreetAddressesUS(text string) []string {
-	return match(text, StreetAddressUSRegex)
-}
-
-func ZipCodesUS(text string) []string {
-	return match(text, ZipCodeUSRegex)
-}
-
-func PoBoxesUS(text string) []string {
-	return match(text, PoBoxUSRegex)
-}
-
-func SSNsUS(text string) []string {
-	return match(text, SSNUSRegex)
-}
+var PhonesUS = func(text string) []string { return match(text, PhoneUSRegex) }
+var PhonesWithExtsUS = func(text string) []string { return match(text, PhonesWithExtsUSRegex) }
+var StreetAddressesUS = func(text string) []string { return match(text, StreetAddressUSRegex) }
+var ZipCodesUS = func(text string) []string { return match(text, ZipCodeUSRegex) }
+var PoBoxesUS = func(text string) []string { return match(text, PoBoxUSRegex) }
+var SSNsUS = func(text string) []string { return match(text, SSNUSRegex) }
 
 // International/generic convenience functions
-func Emails(text string) []string {
-	return match(text, EmailRegex)
-}
-
-func IPv4s(text string) []string {
-	return match(text, IPv4Regex)
-}
-
-func IPv6s(text string) []string {
-	return match(text, IPv6Regex)
-}
-
-func IPs(text string) []string {
-	return match(text, IPRegex)
-}
-
-func CreditCards(text string) []string {
-	return match(text, CreditCardRegex)
-}
-
-func VISACreditCards(text string) []string {
-	return match(text, VISACreditCardRegex)
-}
-
-func MCCreditCards(text string) []string {
-	return match(text, MCCreditCardRegex)
-}
-
-func BtcAddresses(text string) []string {
-	return match(text, BtcAddressRegex)
-}
-
-func IBANs(text string) []string {
-	return match(text, IBANRegex)
-}
+var Emails = func(text string) []string { return match(text, EmailRegex) }
+var IPv4s = func(text string) []string { return match(text, IPv4Regex) }
+var IPv6s = func(text string) []string { return match(text, IPv6Regex) }
+var IPs = func(text string) []string { return match(text, IPRegex) }
+var CreditCards = func(text string) []string { return match(text, CreditCardRegex) }
+var VISACreditCards = func(text string) []string { return match(text, VISACreditCardRegex) }
+var MCCreditCards = func(text string) []string { return match(text, MCCreditCardRegex) }
+var BtcAddresses = func(text string) []string { return match(text, BtcAddressRegex) }
+var IBANs = func(text string) []string { return match(text, IBANRegex) }
 
 // Structured extraction functions that return value objects
 
-// ExtractPhonesUS extracts US phone numbers as Phone value objects
+// extractWithContext is a generic function for extracting PII with context and counting
+func extractWithContext[T any](text string, regex *regexp.Regexp, createItem func(value string, context string) T, updateItem func(item *T, context string)) []T {
+	indices := matchWithIndices(text, regex)
+	itemMap := make(map[string]*T)
+
+	for _, idx := range indices {
+		start, end := idx[0], idx[1]
+		value := text[start:end]
+		context := extractContext(text, start, end)
+
+		if item, exists := itemMap[value]; exists {
+			updateItem(item, context)
+		} else {
+			newItem := createItem(value, context)
+			itemMap[value] = &newItem
+		}
+	}
+
+	items := make([]T, 0, len(itemMap))
+	for _, item := range itemMap {
+		items = append(items, *item)
+	}
+	return items
+}
+
+// ExtractPhonesUS extracts US phone numbers as Phone value objects with context
 func ExtractPhonesUS(text string) []Phone {
-	matches := match(text, PhoneUSRegex)
-	phones := make([]Phone, len(matches))
-	for i, match := range matches {
-		phones[i] = NewPhoneUS(match)
-	}
-	return phones
+	return extractWithContext(text, PhoneUSRegex,
+		func(value, context string) Phone {
+			return Phone{
+				Value:    value,
+				Country:  "US",
+				Contexts: []string{context},
+				Count:    1,
+			}
+		},
+		func(phone *Phone, context string) {
+			phone.Count++
+			phone.Contexts = append(phone.Contexts, context)
+		})
 }
 
-// ExtractEmails extracts email addresses as Email value objects
+// ExtractEmails extracts email addresses as Email value objects with context
 func ExtractEmails(text string) []Email {
-	matches := match(text, EmailRegex)
-	emails := make([]Email, len(matches))
-	for i, match := range matches {
-		emails[i] = NewEmail(match)
-	}
-	return emails
+	return extractWithContext(text, EmailRegex,
+		func(value, context string) Email {
+			return Email{
+				Value:    value,
+				Contexts: []string{context},
+				Count:    1,
+			}
+		},
+		func(email *Email, context string) {
+			email.Count++
+			email.Contexts = append(email.Contexts, context)
+		})
 }
 
-// ExtractSSNsUS extracts US SSNs as SSN value objects
+// ExtractSSNsUS extracts US SSNs as SSN value objects with context
 func ExtractSSNsUS(text string) []SSN {
-	matches := match(text, SSNUSRegex)
-	ssns := make([]SSN, len(matches))
-	for i, match := range matches {
-		ssns[i] = NewSSNUS(match)
-	}
-	return ssns
+	return extractWithContext(text, SSNUSRegex,
+		func(value, context string) SSN {
+			return SSN{
+				Value:    value,
+				Country:  "US",
+				Contexts: []string{context},
+				Count:    1,
+			}
+		},
+		func(ssn *SSN, context string) {
+			ssn.Count++
+			ssn.Contexts = append(ssn.Contexts, context)
+		})
 }
 
-// ExtractZipCodesUS extracts US zip codes as ZipCode value objects
+// ExtractZipCodesUS extracts US zip codes as ZipCode value objects with context
 func ExtractZipCodesUS(text string) []ZipCode {
-	matches := match(text, ZipCodeUSRegex)
-	zipCodes := make([]ZipCode, len(matches))
-	for i, match := range matches {
-		zipCodes[i] = NewZipCodeUS(match)
-	}
-	return zipCodes
+	return extractWithContext(text, ZipCodeUSRegex,
+		func(value, context string) ZipCode {
+			return ZipCode{
+				Value:    value,
+				Country:  "US",
+				Contexts: []string{context},
+				Count:    1,
+			}
+		},
+		func(zipCode *ZipCode, context string) {
+			zipCode.Count++
+			zipCode.Contexts = append(zipCode.Contexts, context)
+		})
 }
 
-// ExtractStreetAddressesUS extracts US street addresses as StreetAddress value objects
+// ExtractStreetAddressesUS extracts US street addresses as StreetAddress value objects with context
 func ExtractStreetAddressesUS(text string) []StreetAddress {
-	matches := match(text, StreetAddressUSRegex)
-	addresses := make([]StreetAddress, len(matches))
-	for i, match := range matches {
-		addresses[i] = NewStreetAddressUS(match)
-	}
-	return addresses
+	return extractWithContext(text, StreetAddressUSRegex,
+		func(value, context string) StreetAddress {
+			return StreetAddress{
+				Value:    value,
+				Country:  "US",
+				Contexts: []string{context},
+				Count:    1,
+			}
+		},
+		func(address *StreetAddress, context string) {
+			address.Count++
+			address.Contexts = append(address.Contexts, context)
+		})
 }
 
-// ExtractCreditCards extracts credit cards as CreditCard value objects
+// ExtractCreditCards extracts credit cards as CreditCard value objects with context
 func ExtractCreditCards(text string) []CreditCard {
-	var cards []CreditCard
-	
+	cardMap := make(map[string]*CreditCard)
+
 	// Check for VISA cards
-	visaMatches := match(text, VISACreditCardRegex)
-	for _, match := range visaMatches {
-		cards = append(cards, NewCreditCard(match, "visa"))
+	visaIndices := matchWithIndices(text, VISACreditCardRegex)
+	for _, idx := range visaIndices {
+		start, end := idx[0], idx[1]
+		value := text[start:end]
+		context := extractContext(text, start, end)
+
+		if card, exists := cardMap[value]; exists {
+			card.Count++
+			card.Contexts = append(card.Contexts, context)
+		} else {
+			cardMap[value] = &CreditCard{
+				Value:    value,
+				Type:     "visa",
+				Contexts: []string{context},
+				Count:    1,
+			}
+		}
 	}
-	
+
 	// Check for MasterCard
-	mcMatches := match(text, MCCreditCardRegex)
-	for _, match := range mcMatches {
-		cards = append(cards, NewCreditCard(match, "mastercard"))
+	mcIndices := matchWithIndices(text, MCCreditCardRegex)
+	for _, idx := range mcIndices {
+		start, end := idx[0], idx[1]
+		value := text[start:end]
+		context := extractContext(text, start, end)
+
+		if card, exists := cardMap[value]; exists {
+			card.Count++
+			card.Contexts = append(card.Contexts, context)
+		} else {
+			cardMap[value] = &CreditCard{
+				Value:    value,
+				Type:     "mastercard",
+				Contexts: []string{context},
+				Count:    1,
+			}
+		}
 	}
-	
-	// Check for generic cards (not VISA/MC)
-	genericMatches := match(text, CreditCardRegex)
-	for _, match := range genericMatches {
+
+	// Check for generic cards (not already found as VISA/MC)
+	genericIndices := matchWithIndices(text, CreditCardRegex)
+	for _, idx := range genericIndices {
+		start, end := idx[0], idx[1]
+		value := text[start:end]
+		context := extractContext(text, start, end)
+
 		// Skip if already found as VISA or MC
-		isVisa := false
-		isMC := false
-		for _, visa := range visaMatches {
-			if visa == match {
-				isVisa = true
-				break
+		if _, exists := cardMap[value]; !exists {
+			cardMap[value] = &CreditCard{
+				Value:    value,
+				Type:     "generic",
+				Contexts: []string{context},
+				Count:    1,
 			}
-		}
-		for _, mc := range mcMatches {
-			if mc == match {
-				isMC = true
-				break
-			}
-		}
-		if !isVisa && !isMC {
-			cards = append(cards, NewCreditCard(match, "generic"))
 		}
 	}
-	
+
+	cards := make([]CreditCard, 0, len(cardMap))
+	for _, card := range cardMap {
+		cards = append(cards, *card)
+	}
 	return cards
 }
 
-// ExtractIPAddresses extracts IP addresses as IPAddress value objects
+// ExtractIPAddresses extracts IP addresses as IPAddress value objects with context
 func ExtractIPAddresses(text string) []IPAddress {
-	var ips []IPAddress
-	
+	ipMap := make(map[string]*IPAddress)
+
 	// Extract IPv4
-	ipv4Matches := match(text, IPv4Regex)
-	for _, match := range ipv4Matches {
-		ips = append(ips, NewIPv4(match))
+	ipv4Indices := matchWithIndices(text, IPv4Regex)
+	for _, idx := range ipv4Indices {
+		start, end := idx[0], idx[1]
+		value := text[start:end]
+		context := extractContext(text, start, end)
+
+		if ip, exists := ipMap[value]; exists {
+			ip.Count++
+			ip.Contexts = append(ip.Contexts, context)
+		} else {
+			ipMap[value] = &IPAddress{
+				Value:    value,
+				Version:  "ipv4",
+				Contexts: []string{context},
+				Count:    1,
+			}
+		}
 	}
-	
+
 	// Extract IPv6
-	ipv6Matches := match(text, IPv6Regex)
-	for _, match := range ipv6Matches {
-		ips = append(ips, NewIPv6(match))
+	ipv6Indices := matchWithIndices(text, IPv6Regex)
+	for _, idx := range ipv6Indices {
+		start, end := idx[0], idx[1]
+		value := text[start:end]
+		context := extractContext(text, start, end)
+
+		if ip, exists := ipMap[value]; exists {
+			ip.Count++
+			ip.Contexts = append(ip.Contexts, context)
+		} else {
+			ipMap[value] = &IPAddress{
+				Value:    value,
+				Version:  "ipv6",
+				Contexts: []string{context},
+				Count:    1,
+			}
+		}
 	}
-	
+
+	ips := make([]IPAddress, 0, len(ipMap))
+	for _, ip := range ipMap {
+		ips = append(ips, *ip)
+	}
 	return ips
 }
 
-// ExtractBtcAddresses extracts Bitcoin addresses as BtcAddress value objects
+// ExtractBtcAddresses extracts Bitcoin addresses as BtcAddress value objects with context
 func ExtractBtcAddresses(text string) []BtcAddress {
-	matches := match(text, BtcAddressRegex)
-	addresses := make([]BtcAddress, len(matches))
-	for i, match := range matches {
-		addresses[i] = NewBtcAddress(match)
-	}
-	return addresses
+	return extractWithContext(text, BtcAddressRegex,
+		func(value, context string) BtcAddress {
+			return BtcAddress{
+				Value:    value,
+				Contexts: []string{context},
+				Count:    1,
+			}
+		},
+		func(btc *BtcAddress, context string) {
+			btc.Count++
+			btc.Contexts = append(btc.Contexts, context)
+		})
 }
 
-// ExtractIBANs extracts IBANs as IBAN value objects
+// ExtractIBANs extracts IBANs as IBAN value objects with context
 func ExtractIBANs(text string) []IBAN {
-	matches := match(text, IBANRegex)
-	ibans := make([]IBAN, len(matches))
-	for i, match := range matches {
-		ibans[i] = NewIBAN(match)
-	}
-	return ibans
+	return extractWithContext(text, IBANRegex,
+		func(value, context string) IBAN {
+			country := ""
+			if len(value) >= 2 {
+				country = value[:2]
+			}
+			return IBAN{
+				Value:    value,
+				Country:  country,
+				Contexts: []string{context},
+				Count:    1,
+			}
+		},
+		func(iban *IBAN, context string) {
+			iban.Count++
+			iban.Contexts = append(iban.Contexts, context)
+		})
 }

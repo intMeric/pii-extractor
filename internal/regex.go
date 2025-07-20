@@ -114,3 +114,136 @@ func BtcAddresses(text string) []string {
 func IBANs(text string) []string {
 	return match(text, IBANRegex)
 }
+
+// Structured extraction functions that return value objects
+
+// ExtractPhonesUS extracts US phone numbers as Phone value objects
+func ExtractPhonesUS(text string) []Phone {
+	matches := match(text, PhoneUSRegex)
+	phones := make([]Phone, len(matches))
+	for i, match := range matches {
+		phones[i] = NewPhoneUS(match)
+	}
+	return phones
+}
+
+// ExtractEmails extracts email addresses as Email value objects
+func ExtractEmails(text string) []Email {
+	matches := match(text, EmailRegex)
+	emails := make([]Email, len(matches))
+	for i, match := range matches {
+		emails[i] = NewEmail(match)
+	}
+	return emails
+}
+
+// ExtractSSNsUS extracts US SSNs as SSN value objects
+func ExtractSSNsUS(text string) []SSN {
+	matches := match(text, SSNUSRegex)
+	ssns := make([]SSN, len(matches))
+	for i, match := range matches {
+		ssns[i] = NewSSNUS(match)
+	}
+	return ssns
+}
+
+// ExtractZipCodesUS extracts US zip codes as ZipCode value objects
+func ExtractZipCodesUS(text string) []ZipCode {
+	matches := match(text, ZipCodeUSRegex)
+	zipCodes := make([]ZipCode, len(matches))
+	for i, match := range matches {
+		zipCodes[i] = NewZipCodeUS(match)
+	}
+	return zipCodes
+}
+
+// ExtractStreetAddressesUS extracts US street addresses as StreetAddress value objects
+func ExtractStreetAddressesUS(text string) []StreetAddress {
+	matches := match(text, StreetAddressUSRegex)
+	addresses := make([]StreetAddress, len(matches))
+	for i, match := range matches {
+		addresses[i] = NewStreetAddressUS(match)
+	}
+	return addresses
+}
+
+// ExtractCreditCards extracts credit cards as CreditCard value objects
+func ExtractCreditCards(text string) []CreditCard {
+	var cards []CreditCard
+	
+	// Check for VISA cards
+	visaMatches := match(text, VISACreditCardRegex)
+	for _, match := range visaMatches {
+		cards = append(cards, NewCreditCard(match, "visa"))
+	}
+	
+	// Check for MasterCard
+	mcMatches := match(text, MCCreditCardRegex)
+	for _, match := range mcMatches {
+		cards = append(cards, NewCreditCard(match, "mastercard"))
+	}
+	
+	// Check for generic cards (not VISA/MC)
+	genericMatches := match(text, CreditCardRegex)
+	for _, match := range genericMatches {
+		// Skip if already found as VISA or MC
+		isVisa := false
+		isMC := false
+		for _, visa := range visaMatches {
+			if visa == match {
+				isVisa = true
+				break
+			}
+		}
+		for _, mc := range mcMatches {
+			if mc == match {
+				isMC = true
+				break
+			}
+		}
+		if !isVisa && !isMC {
+			cards = append(cards, NewCreditCard(match, "generic"))
+		}
+	}
+	
+	return cards
+}
+
+// ExtractIPAddresses extracts IP addresses as IPAddress value objects
+func ExtractIPAddresses(text string) []IPAddress {
+	var ips []IPAddress
+	
+	// Extract IPv4
+	ipv4Matches := match(text, IPv4Regex)
+	for _, match := range ipv4Matches {
+		ips = append(ips, NewIPv4(match))
+	}
+	
+	// Extract IPv6
+	ipv6Matches := match(text, IPv6Regex)
+	for _, match := range ipv6Matches {
+		ips = append(ips, NewIPv6(match))
+	}
+	
+	return ips
+}
+
+// ExtractBtcAddresses extracts Bitcoin addresses as BtcAddress value objects
+func ExtractBtcAddresses(text string) []BtcAddress {
+	matches := match(text, BtcAddressRegex)
+	addresses := make([]BtcAddress, len(matches))
+	for i, match := range matches {
+		addresses[i] = NewBtcAddress(match)
+	}
+	return addresses
+}
+
+// ExtractIBANs extracts IBANs as IBAN value objects
+func ExtractIBANs(text string) []IBAN {
+	matches := match(text, IBANRegex)
+	ibans := make([]IBAN, len(matches))
+	for i, match := range matches {
+		ibans[i] = NewIBAN(match)
+	}
+	return ibans
+}

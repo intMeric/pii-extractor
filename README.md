@@ -1,1 +1,3 @@
 # pii-extractor
+
+A Go-based tool for extracting and identifying Personally Identifiable Information (PII) from various data sources. PII refers to any information that can be used to identify, contact, or locate a specific individual, such as names, email addresses, phone numbers, social security numbers, and other sensitive personal data. This tool helps organizations detect and manage PII to ensure compliance with privacy regulations and data protection standards.

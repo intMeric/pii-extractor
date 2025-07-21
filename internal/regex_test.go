@@ -648,16 +648,16 @@ func TestExtractPhonesUS(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ExtractPhonesUS(tt.input)
-			
+
 			if len(result) != tt.expectedCount {
 				t.Errorf("ExtractPhonesUS() returned %d phones, expected %d", len(result), tt.expectedCount)
 				return
 			}
-			
+
 			if tt.expectedCount == 0 {
 				return
 			}
-			
+
 			if tt.expectedCount == 1 {
 				phone := result[0]
 				if phone.Value != tt.expectedValue {
@@ -673,7 +673,7 @@ func TestExtractPhonesUS(t *testing.T) {
 					t.Errorf("ExtractPhonesUS() phone context = %q, expected %q", phone.Contexts[0], tt.expectedCtx)
 				}
 			}
-			
+
 			if tt.expectedCount > 1 {
 				for _, phone := range result {
 					if phone.Country != "US" {
@@ -745,16 +745,16 @@ func TestExtractEmails(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ExtractEmails(tt.input)
-			
+
 			if len(result) != tt.expectedCount {
 				t.Errorf("ExtractEmails() returned %d emails, expected %d", len(result), tt.expectedCount)
 				return
 			}
-			
+
 			if tt.expectedCount == 0 {
 				return
 			}
-			
+
 			if tt.expectedCount == 1 {
 				email := result[0]
 				if email.Value != tt.expectedValue {
@@ -767,7 +767,7 @@ func TestExtractEmails(t *testing.T) {
 					t.Errorf("ExtractEmails() email context = %q, expected %q", email.Contexts[0], tt.expectedCtx)
 				}
 			}
-			
+
 			if tt.expectedCount > 1 {
 				for _, email := range result {
 					if email.Count != 1 {
@@ -836,16 +836,16 @@ func TestExtractSSNsUS(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ExtractSSNsUS(tt.input)
-			
+
 			if len(result) != tt.expectedCount {
 				t.Errorf("ExtractSSNsUS() returned %d SSNs, expected %d", len(result), tt.expectedCount)
 				return
 			}
-			
+
 			if tt.expectedCount == 0 {
 				return
 			}
-			
+
 			if tt.expectedCount == 1 {
 				ssn := result[0]
 				if ssn.Value != tt.expectedValue {
@@ -861,7 +861,7 @@ func TestExtractSSNsUS(t *testing.T) {
 					t.Errorf("ExtractSSNsUS() SSN context = %q, expected %q", ssn.Contexts[0], tt.expectedCtx)
 				}
 			}
-			
+
 			if tt.expectedCount > 1 {
 				for _, ssn := range result {
 					if ssn.Country != "US" {

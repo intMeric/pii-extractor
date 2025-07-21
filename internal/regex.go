@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/intMeric/pii-extractor/pkg"
 )
 
 const (
@@ -204,92 +206,92 @@ func extractWithContext[T any](text string, regex *regexp.Regexp, createItem fun
 }
 
 // ExtractPhonesUS extracts US phone numbers as Phone value objects with context
-func ExtractPhonesUS(text string) []Phone {
+func ExtractPhonesUS(text string) []pkg.Phone {
 	return extractWithContext(text, PhoneUSRegex,
-		func(value, context string) Phone {
-			return Phone{
+		func(value, context string) pkg.Phone {
+			return pkg.Phone{
 				Value:    value,
 				Country:  "US",
 				Contexts: []string{context},
 				Count:    1,
 			}
 		},
-		func(phone *Phone, context string) {
+		func(phone *pkg.Phone, context string) {
 			phone.Count++
 			phone.Contexts = append(phone.Contexts, context)
 		})
 }
 
 // ExtractEmails extracts email addresses as Email value objects with context
-func ExtractEmails(text string) []Email {
+func ExtractEmails(text string) []pkg.Email {
 	return extractWithContext(text, EmailRegex,
-		func(value, context string) Email {
-			return Email{
+		func(value, context string) pkg.Email {
+			return pkg.Email{
 				Value:    value,
 				Contexts: []string{context},
 				Count:    1,
 			}
 		},
-		func(email *Email, context string) {
+		func(email *pkg.Email, context string) {
 			email.Count++
 			email.Contexts = append(email.Contexts, context)
 		})
 }
 
 // ExtractSSNsUS extracts US SSNs as SSN value objects with context
-func ExtractSSNsUS(text string) []SSN {
+func ExtractSSNsUS(text string) []pkg.SSN {
 	return extractWithContext(text, SSNUSRegex,
-		func(value, context string) SSN {
-			return SSN{
+		func(value, context string) pkg.SSN {
+			return pkg.SSN{
 				Value:    value,
 				Country:  "US",
 				Contexts: []string{context},
 				Count:    1,
 			}
 		},
-		func(ssn *SSN, context string) {
+		func(ssn *pkg.SSN, context string) {
 			ssn.Count++
 			ssn.Contexts = append(ssn.Contexts, context)
 		})
 }
 
 // ExtractZipCodesUS extracts US zip codes as ZipCode value objects with context
-func ExtractZipCodesUS(text string) []ZipCode {
+func ExtractZipCodesUS(text string) []pkg.ZipCode {
 	return extractWithContext(text, ZipCodeUSRegex,
-		func(value, context string) ZipCode {
-			return ZipCode{
+		func(value, context string) pkg.ZipCode {
+			return pkg.ZipCode{
 				Value:    value,
 				Country:  "US",
 				Contexts: []string{context},
 				Count:    1,
 			}
 		},
-		func(zipCode *ZipCode, context string) {
+		func(zipCode *pkg.ZipCode, context string) {
 			zipCode.Count++
 			zipCode.Contexts = append(zipCode.Contexts, context)
 		})
 }
 
 // ExtractStreetAddressesUS extracts US street addresses as StreetAddress value objects with context
-func ExtractStreetAddressesUS(text string) []StreetAddress {
+func ExtractStreetAddressesUS(text string) []pkg.StreetAddress {
 	return extractWithContext(text, StreetAddressUSRegex,
-		func(value, context string) StreetAddress {
-			return StreetAddress{
+		func(value, context string) pkg.StreetAddress {
+			return pkg.StreetAddress{
 				Value:    value,
 				Country:  "US",
 				Contexts: []string{context},
 				Count:    1,
 			}
 		},
-		func(address *StreetAddress, context string) {
+		func(address *pkg.StreetAddress, context string) {
 			address.Count++
 			address.Contexts = append(address.Contexts, context)
 		})
 }
 
 // ExtractCreditCards extracts credit cards as CreditCard value objects with context
-func ExtractCreditCards(text string) []CreditCard {
-	cardMap := make(map[string]*CreditCard)
+func ExtractCreditCards(text string) []pkg.CreditCard {
+	cardMap := make(map[string]*pkg.CreditCard)
 
 	// Check for VISA cards
 	visaIndices := matchWithIndices(text, VISACreditCardRegex)
@@ -302,7 +304,7 @@ func ExtractCreditCards(text string) []CreditCard {
 			card.Count++
 			card.Contexts = append(card.Contexts, context)
 		} else {
-			cardMap[value] = &CreditCard{
+			cardMap[value] = &pkg.CreditCard{
 				Value:    value,
 				Type:     "visa",
 				Contexts: []string{context},
@@ -322,7 +324,7 @@ func ExtractCreditCards(text string) []CreditCard {
 			card.Count++
 			card.Contexts = append(card.Contexts, context)
 		} else {
-			cardMap[value] = &CreditCard{
+			cardMap[value] = &pkg.CreditCard{
 				Value:    value,
 				Type:     "mastercard",
 				Contexts: []string{context},
@@ -340,7 +342,7 @@ func ExtractCreditCards(text string) []CreditCard {
 
 		// Skip if already found as VISA or MC
 		if _, exists := cardMap[value]; !exists {
-			cardMap[value] = &CreditCard{
+			cardMap[value] = &pkg.CreditCard{
 				Value:    value,
 				Type:     "generic",
 				Contexts: []string{context},
@@ -349,7 +351,7 @@ func ExtractCreditCards(text string) []CreditCard {
 		}
 	}
 
-	cards := make([]CreditCard, 0, len(cardMap))
+	cards := make([]pkg.CreditCard, 0, len(cardMap))
 	for _, card := range cardMap {
 		cards = append(cards, *card)
 	}
@@ -357,8 +359,8 @@ func ExtractCreditCards(text string) []CreditCard {
 }
 
 // ExtractIPAddresses extracts IP addresses as IPAddress value objects with context
-func ExtractIPAddresses(text string) []IPAddress {
-	ipMap := make(map[string]*IPAddress)
+func ExtractIPAddresses(text string) []pkg.IPAddress {
+	ipMap := make(map[string]*pkg.IPAddress)
 
 	// Extract IPv4
 	ipv4Indices := matchWithIndices(text, IPv4Regex)
@@ -371,7 +373,7 @@ func ExtractIPAddresses(text string) []IPAddress {
 			ip.Count++
 			ip.Contexts = append(ip.Contexts, context)
 		} else {
-			ipMap[value] = &IPAddress{
+			ipMap[value] = &pkg.IPAddress{
 				Value:    value,
 				Version:  "ipv4",
 				Contexts: []string{context},
@@ -391,7 +393,7 @@ func ExtractIPAddresses(text string) []IPAddress {
 			ip.Count++
 			ip.Contexts = append(ip.Contexts, context)
 		} else {
-			ipMap[value] = &IPAddress{
+			ipMap[value] = &pkg.IPAddress{
 				Value:    value,
 				Version:  "ipv6",
 				Contexts: []string{context},
@@ -400,7 +402,7 @@ func ExtractIPAddresses(text string) []IPAddress {
 		}
 	}
 
-	ips := make([]IPAddress, 0, len(ipMap))
+	ips := make([]pkg.IPAddress, 0, len(ipMap))
 	for _, ip := range ipMap {
 		ips = append(ips, *ip)
 	}
@@ -408,37 +410,37 @@ func ExtractIPAddresses(text string) []IPAddress {
 }
 
 // ExtractBtcAddresses extracts Bitcoin addresses as BtcAddress value objects with context
-func ExtractBtcAddresses(text string) []BtcAddress {
+func ExtractBtcAddresses(text string) []pkg.BtcAddress {
 	return extractWithContext(text, BtcAddressRegex,
-		func(value, context string) BtcAddress {
-			return BtcAddress{
+		func(value, context string) pkg.BtcAddress {
+			return pkg.BtcAddress{
 				Value:    value,
 				Contexts: []string{context},
 				Count:    1,
 			}
 		},
-		func(btc *BtcAddress, context string) {
+		func(btc *pkg.BtcAddress, context string) {
 			btc.Count++
 			btc.Contexts = append(btc.Contexts, context)
 		})
 }
 
 // ExtractIBANs extracts IBANs as IBAN value objects with context
-func ExtractIBANs(text string) []IBAN {
+func ExtractIBANs(text string) []pkg.IBAN {
 	return extractWithContext(text, IBANRegex,
-		func(value, context string) IBAN {
+		func(value, context string) pkg.IBAN {
 			country := ""
 			if len(value) >= 2 {
 				country = value[:2]
 			}
-			return IBAN{
+			return pkg.IBAN{
 				Value:    value,
 				Country:  country,
 				Contexts: []string{context},
 				Count:    1,
 			}
 		},
-		func(iban *IBAN, context string) {
+		func(iban *pkg.IBAN, context string) {
 			iban.Count++
 			iban.Contexts = append(iban.Contexts, context)
 		})

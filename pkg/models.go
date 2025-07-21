@@ -1,4 +1,4 @@
-package internal
+package pkg
 
 // Phone represents a phone number value object
 type Phone struct {

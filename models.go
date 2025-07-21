@@ -1,4 +1,12 @@
-package pkg
+package piiextractor
+
+// Pii is a common interface for all PII types
+type Pii interface {
+	GetValue() string
+	GetContexts() []string
+	GetCount() int
+	String() string
+}
 
 // Phone represents a phone number value object
 type Phone struct {
@@ -142,41 +150,172 @@ func NewIBAN(value string) IBAN {
 	return IBAN{Value: value, Country: country, Contexts: []string{}, Count: 1}
 }
 
-// String methods for display
+// Pii interface implementations
+
+// Phone methods
+func (p Phone) GetValue() string {
+	return p.Value
+}
+
+func (p Phone) GetContexts() []string {
+	return p.Contexts
+}
+
+func (p Phone) GetCount() int {
+	return p.Count
+}
+
 func (p Phone) String() string {
 	return p.Value
+}
+
+// Email methods
+func (e Email) GetValue() string {
+	return e.Value
+}
+
+func (e Email) GetContexts() []string {
+	return e.Contexts
+}
+
+func (e Email) GetCount() int {
+	return e.Count
 }
 
 func (e Email) String() string {
 	return e.Value
 }
 
+// SSN methods
+func (s SSN) GetValue() string {
+	return s.Value
+}
+
+func (s SSN) GetContexts() []string {
+	return s.Contexts
+}
+
+func (s SSN) GetCount() int {
+	return s.Count
+}
+
 func (s SSN) String() string {
 	return s.Value
+}
+
+// ZipCode methods
+func (z ZipCode) GetValue() string {
+	return z.Value
+}
+
+func (z ZipCode) GetContexts() []string {
+	return z.Contexts
+}
+
+func (z ZipCode) GetCount() int {
+	return z.Count
 }
 
 func (z ZipCode) String() string {
 	return z.Value
 }
 
+// PoBox methods
+func (p PoBox) GetValue() string {
+	return p.Value
+}
+
+func (p PoBox) GetContexts() []string {
+	return p.Contexts
+}
+
+func (p PoBox) GetCount() int {
+	return p.Count
+}
+
 func (p PoBox) String() string {
 	return p.Value
+}
+
+// StreetAddress methods
+func (s StreetAddress) GetValue() string {
+	return s.Value
+}
+
+func (s StreetAddress) GetContexts() []string {
+	return s.Contexts
+}
+
+func (s StreetAddress) GetCount() int {
+	return s.Count
 }
 
 func (s StreetAddress) String() string {
 	return s.Value
 }
 
+// CreditCard methods
+func (c CreditCard) GetValue() string {
+	return c.Value
+}
+
+func (c CreditCard) GetContexts() []string {
+	return c.Contexts
+}
+
+func (c CreditCard) GetCount() int {
+	return c.Count
+}
+
 func (c CreditCard) String() string {
 	return c.Value
+}
+
+// IPAddress methods
+func (i IPAddress) GetValue() string {
+	return i.Value
+}
+
+func (i IPAddress) GetContexts() []string {
+	return i.Contexts
+}
+
+func (i IPAddress) GetCount() int {
+	return i.Count
 }
 
 func (i IPAddress) String() string {
 	return i.Value
 }
 
+// BtcAddress methods
+func (b BtcAddress) GetValue() string {
+	return b.Value
+}
+
+func (b BtcAddress) GetContexts() []string {
+	return b.Contexts
+}
+
+func (b BtcAddress) GetCount() int {
+	return b.Count
+}
+
 func (b BtcAddress) String() string {
 	return b.Value
+}
+
+// IBAN methods
+func (i IBAN) GetValue() string {
+	return i.Value
+}
+
+func (i IBAN) GetContexts() []string {
+	return i.Contexts
+}
+
+func (i IBAN) GetCount() int {
+	return i.Count
 }
 
 func (i IBAN) String() string {

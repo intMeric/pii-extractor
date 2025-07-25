@@ -28,15 +28,16 @@ func main() {
 	`
 
 	// Extract PII from the text
-	entities, err := extractor.Extract(text)
+	result, err := extractor.Extract(text)
 	if err != nil {
 		log.Fatalf("Error extracting PII: %v", err)
 	}
 
-	// Display results
-	fmt.Printf("Found %d PII entities:\n\n", len(entities))
+	// Display summary
+	fmt.Printf("Found %d PII entities:\n", result.Total)
+	fmt.Printf("Types found: %v\n\n", result.Stats)
 
-	for i, entity := range entities {
+	for i, entity := range result.Entities {
 		fmt.Printf("--- Entity %d ---\n", i+1)
 		fmt.Printf("Type: %s\n", entity.Type)
 		fmt.Printf("Value: %s\n", entity.GetValue())
@@ -49,19 +50,19 @@ func main() {
 
 		// Demonstrate type-specific casting
 		switch entity.Type {
-		case "email":
+		case piiextractor.PiiTypeEmail:
 			if email, ok := entity.AsEmail(); ok {
 				fmt.Printf("Email domain: %s\n", getEmailDomain(email.GetValue()))
 			}
-		case "phone":
+		case piiextractor.PiiTypePhone:
 			if phone, ok := entity.AsPhone(); ok {
 				fmt.Printf("Phone country: %s\n", phone.Country)
 			}
-		case "credit_card":
+		case piiextractor.PiiTypeCreditCard:
 			if cc, ok := entity.AsCreditCard(); ok {
 				fmt.Printf("Card type: %s\n", cc.Type)
 			}
-		case "ip_address":
+		case piiextractor.PiiTypeIPAddress:
 			if ip, ok := entity.AsIPAddress(); ok {
 				fmt.Printf("IP version: %s\n", ip.Version)
 			}
@@ -69,9 +70,16 @@ func main() {
 		fmt.Println()
 	}
 
+	// Demonstrate new result methods
+	fmt.Println("--- PiiExtractionResult Methods ---")
+	fmt.Printf("Emails found: %d\n", len(result.GetEmails()))
+	fmt.Printf("Phones found: %d\n", len(result.GetPhones()))
+	fmt.Printf("Has credit cards: %t\n", result.HasType(piiextractor.PiiTypeCreditCard))
+	fmt.Printf("Is empty: %t\n\n", result.IsEmpty())
+
 	// Demonstrate JSON serialization
 	fmt.Println("--- JSON Output ---")
-	jsonData, err := json.MarshalIndent(entities, "", "  ")
+	jsonData, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		log.Fatalf("Error marshaling to JSON: %v", err)
 	}

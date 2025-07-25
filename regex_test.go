@@ -659,30 +659,42 @@ func TestExtractPhonesUS(t *testing.T) {
 			}
 
 			if tt.expectedCount == 1 {
-				phone := result[0]
-				if phone.Value != tt.expectedValue {
-					t.Errorf("ExtractPhonesUS() phone value = %q, expected %q", phone.Value, tt.expectedValue)
+				entity := result[0]
+				phone, ok := entity.AsPhone()
+				if !ok {
+					t.Errorf("ExtractPhonesUS() returned non-phone entity")
+					return
 				}
-				if phone.Count != tt.expectedOccur {
-					t.Errorf("ExtractPhonesUS() phone count = %d, expected %d", phone.Count, tt.expectedOccur)
+				if phone.GetValue() != tt.expectedValue {
+					t.Errorf("ExtractPhonesUS() phone value = %q, expected %q", phone.GetValue(), tt.expectedValue)
+				}
+				if phone.GetCount() != tt.expectedOccur {
+					t.Errorf("ExtractPhonesUS() phone count = %d, expected %d", phone.GetCount(), tt.expectedOccur)
 				}
 				if phone.Country != "US" {
 					t.Errorf("ExtractPhonesUS() phone country = %q, expected %q", phone.Country, "US")
 				}
-				if len(phone.Contexts) > 0 && tt.expectedCtx != "" && phone.Contexts[0] != tt.expectedCtx {
-					t.Errorf("ExtractPhonesUS() phone context = %q, expected %q", phone.Contexts[0], tt.expectedCtx)
+				contexts := phone.GetContexts()
+				if len(contexts) > 0 && tt.expectedCtx != "" && contexts[0] != tt.expectedCtx {
+					t.Errorf("ExtractPhonesUS() phone context = %q, expected %q", contexts[0], tt.expectedCtx)
 				}
 			}
 
 			if tt.expectedCount > 1 {
-				for _, phone := range result {
+				for _, entity := range result {
+					phone, ok := entity.AsPhone()
+					if !ok {
+						t.Errorf("ExtractPhonesUS() returned non-phone entity")
+						continue
+					}
 					if phone.Country != "US" {
 						t.Errorf("ExtractPhonesUS() phone country = %q, expected %q", phone.Country, "US")
 					}
-					if phone.Count != 1 {
-						t.Errorf("ExtractPhonesUS() phone count = %d, expected %d", phone.Count, 1)
+					if phone.GetCount() != 1 {
+						t.Errorf("ExtractPhonesUS() phone count = %d, expected %d", phone.GetCount(), 1)
 					}
-					if len(phone.Contexts) == 0 {
+					contexts := phone.GetContexts()
+					if len(contexts) == 0 {
 						t.Errorf("ExtractPhonesUS() phone contexts should not be empty")
 					}
 				}
@@ -756,24 +768,36 @@ func TestExtractEmails(t *testing.T) {
 			}
 
 			if tt.expectedCount == 1 {
-				email := result[0]
-				if email.Value != tt.expectedValue {
-					t.Errorf("ExtractEmails() email value = %q, expected %q", email.Value, tt.expectedValue)
+				entity := result[0]
+				email, ok := entity.AsEmail()
+				if !ok {
+					t.Errorf("ExtractEmails() returned non-email entity")
+					return
 				}
-				if email.Count != tt.expectedOccur {
-					t.Errorf("ExtractEmails() email count = %d, expected %d", email.Count, tt.expectedOccur)
+				if email.GetValue() != tt.expectedValue {
+					t.Errorf("ExtractEmails() email value = %q, expected %q", email.GetValue(), tt.expectedValue)
 				}
-				if len(email.Contexts) > 0 && tt.expectedCtx != "" && email.Contexts[0] != tt.expectedCtx {
-					t.Errorf("ExtractEmails() email context = %q, expected %q", email.Contexts[0], tt.expectedCtx)
+				if email.GetCount() != tt.expectedOccur {
+					t.Errorf("ExtractEmails() email count = %d, expected %d", email.GetCount(), tt.expectedOccur)
+				}
+				contexts := email.GetContexts()
+				if len(contexts) > 0 && tt.expectedCtx != "" && contexts[0] != tt.expectedCtx {
+					t.Errorf("ExtractEmails() email context = %q, expected %q", contexts[0], tt.expectedCtx)
 				}
 			}
 
 			if tt.expectedCount > 1 {
-				for _, email := range result {
-					if email.Count != 1 {
-						t.Errorf("ExtractEmails() email count = %d, expected %d", email.Count, 1)
+				for _, entity := range result {
+					email, ok := entity.AsEmail()
+					if !ok {
+						t.Errorf("ExtractEmails() returned non-email entity")
+						continue
 					}
-					if len(email.Contexts) == 0 {
+					if email.GetCount() != 1 {
+						t.Errorf("ExtractEmails() email count = %d, expected %d", email.GetCount(), 1)
+					}
+					contexts := email.GetContexts()
+					if len(contexts) == 0 {
 						t.Errorf("ExtractEmails() email contexts should not be empty")
 					}
 				}
@@ -847,30 +871,42 @@ func TestExtractSSNsUS(t *testing.T) {
 			}
 
 			if tt.expectedCount == 1 {
-				ssn := result[0]
-				if ssn.Value != tt.expectedValue {
-					t.Errorf("ExtractSSNsUS() SSN value = %q, expected %q", ssn.Value, tt.expectedValue)
+				entity := result[0]
+				ssn, ok := entity.AsSSN()
+				if !ok {
+					t.Errorf("ExtractSSNsUS() returned non-SSN entity")
+					return
 				}
-				if ssn.Count != tt.expectedOccur {
-					t.Errorf("ExtractSSNsUS() SSN count = %d, expected %d", ssn.Count, tt.expectedOccur)
+				if ssn.GetValue() != tt.expectedValue {
+					t.Errorf("ExtractSSNsUS() SSN value = %q, expected %q", ssn.GetValue(), tt.expectedValue)
+				}
+				if ssn.GetCount() != tt.expectedOccur {
+					t.Errorf("ExtractSSNsUS() SSN count = %d, expected %d", ssn.GetCount(), tt.expectedOccur)
 				}
 				if ssn.Country != "US" {
 					t.Errorf("ExtractSSNsUS() SSN country = %q, expected %q", ssn.Country, "US")
 				}
-				if len(ssn.Contexts) > 0 && tt.expectedCtx != "" && ssn.Contexts[0] != tt.expectedCtx {
-					t.Errorf("ExtractSSNsUS() SSN context = %q, expected %q", ssn.Contexts[0], tt.expectedCtx)
+				contexts := ssn.GetContexts()
+				if len(contexts) > 0 && tt.expectedCtx != "" && contexts[0] != tt.expectedCtx {
+					t.Errorf("ExtractSSNsUS() SSN context = %q, expected %q", contexts[0], tt.expectedCtx)
 				}
 			}
 
 			if tt.expectedCount > 1 {
-				for _, ssn := range result {
+				for _, entity := range result {
+					ssn, ok := entity.AsSSN()
+					if !ok {
+						t.Errorf("ExtractSSNsUS() returned non-SSN entity")
+						continue
+					}
 					if ssn.Country != "US" {
 						t.Errorf("ExtractSSNsUS() SSN country = %q, expected %q", ssn.Country, "US")
 					}
-					if ssn.Count != 1 {
-						t.Errorf("ExtractSSNsUS() SSN count = %d, expected %d", ssn.Count, 1)
+					if ssn.GetCount() != 1 {
+						t.Errorf("ExtractSSNsUS() SSN count = %d, expected %d", ssn.GetCount(), 1)
 					}
-					if len(ssn.Contexts) == 0 {
+					contexts := ssn.GetContexts()
+					if len(contexts) == 0 {
 						t.Errorf("ExtractSSNsUS() SSN contexts should not be empty")
 					}
 				}

@@ -203,9 +203,9 @@ func extractWithContext[T any](text string, regex *regexp.Regexp, createItem fun
 	return items
 }
 
-// ExtractPhonesUS extracts US phone numbers as Phone value objects with context
-func ExtractPhonesUS(text string) []Phone {
-	return extractWithContext(text, PhoneUSRegex,
+// ExtractPhonesUS extracts US phone numbers as PiiEntity objects with context
+func ExtractPhonesUS(text string) []PiiEntity {
+	phones := extractWithContext(text, PhoneUSRegex,
 		func(value, context string) Phone {
 			return Phone{
 				Value:    value,
@@ -218,11 +218,20 @@ func ExtractPhonesUS(text string) []Phone {
 			phone.Count++
 			phone.Contexts = append(phone.Contexts, context)
 		})
+	
+	var entities []PiiEntity
+	for _, phone := range phones {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypePhone,
+			Value: phone,
+		})
+	}
+	return entities
 }
 
-// ExtractEmails extracts email addresses as Email value objects with context
-func ExtractEmails(text string) []Email {
-	return extractWithContext(text, EmailRegex,
+// ExtractEmails extracts email addresses as PiiEntity objects with context
+func ExtractEmails(text string) []PiiEntity {
+	emails := extractWithContext(text, EmailRegex,
 		func(value, context string) Email {
 			return Email{
 				Value:    value,
@@ -234,11 +243,20 @@ func ExtractEmails(text string) []Email {
 			email.Count++
 			email.Contexts = append(email.Contexts, context)
 		})
+	
+	var entities []PiiEntity
+	for _, email := range emails {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeEmail,
+			Value: email,
+		})
+	}
+	return entities
 }
 
-// ExtractSSNsUS extracts US SSNs as SSN value objects with context
-func ExtractSSNsUS(text string) []SSN {
-	return extractWithContext(text, SSNUSRegex,
+// ExtractSSNsUS extracts US SSNs as PiiEntity objects with context
+func ExtractSSNsUS(text string) []PiiEntity {
+	ssns := extractWithContext(text, SSNUSRegex,
 		func(value, context string) SSN {
 			return SSN{
 				Value:    value,
@@ -251,11 +269,20 @@ func ExtractSSNsUS(text string) []SSN {
 			ssn.Count++
 			ssn.Contexts = append(ssn.Contexts, context)
 		})
+	
+	var entities []PiiEntity
+	for _, ssn := range ssns {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeSSN,
+			Value: ssn,
+		})
+	}
+	return entities
 }
 
-// ExtractZipCodesUS extracts US zip codes as ZipCode value objects with context
-func ExtractZipCodesUS(text string) []ZipCode {
-	return extractWithContext(text, ZipCodeUSRegex,
+// ExtractZipCodesUS extracts US zip codes as PiiEntity objects with context
+func ExtractZipCodesUS(text string) []PiiEntity {
+	zipCodes := extractWithContext(text, ZipCodeUSRegex,
 		func(value, context string) ZipCode {
 			return ZipCode{
 				Value:    value,
@@ -268,11 +295,20 @@ func ExtractZipCodesUS(text string) []ZipCode {
 			zipCode.Count++
 			zipCode.Contexts = append(zipCode.Contexts, context)
 		})
+	
+	var entities []PiiEntity
+	for _, zipCode := range zipCodes {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeZipCode,
+			Value: zipCode,
+		})
+	}
+	return entities
 }
 
-// ExtractStreetAddressesUS extracts US street addresses as StreetAddress value objects with context
-func ExtractStreetAddressesUS(text string) []StreetAddress {
-	return extractWithContext(text, StreetAddressUSRegex,
+// ExtractStreetAddressesUS extracts US street addresses as PiiEntity objects with context
+func ExtractStreetAddressesUS(text string) []PiiEntity {
+	addresses := extractWithContext(text, StreetAddressUSRegex,
 		func(value, context string) StreetAddress {
 			return StreetAddress{
 				Value:    value,
@@ -285,10 +321,19 @@ func ExtractStreetAddressesUS(text string) []StreetAddress {
 			address.Count++
 			address.Contexts = append(address.Contexts, context)
 		})
+	
+	var entities []PiiEntity
+	for _, address := range addresses {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeStreetAddress,
+			Value: address,
+		})
+	}
+	return entities
 }
 
-// ExtractCreditCards extracts credit cards as CreditCard value objects with context
-func ExtractCreditCards(text string) []CreditCard {
+// ExtractCreditCards extracts credit cards as PiiEntity objects with context
+func ExtractCreditCards(text string) []PiiEntity {
 	cardMap := make(map[string]*CreditCard)
 
 	// Check for VISA cards
@@ -349,15 +394,18 @@ func ExtractCreditCards(text string) []CreditCard {
 		}
 	}
 
-	cards := make([]CreditCard, 0, len(cardMap))
+	var entities []PiiEntity
 	for _, card := range cardMap {
-		cards = append(cards, *card)
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeCreditCard,
+			Value: *card,
+		})
 	}
-	return cards
+	return entities
 }
 
-// ExtractIPAddresses extracts IP addresses as IPAddress value objects with context
-func ExtractIPAddresses(text string) []IPAddress {
+// ExtractIPAddresses extracts IP addresses as PiiEntity objects with context
+func ExtractIPAddresses(text string) []PiiEntity {
 	ipMap := make(map[string]*IPAddress)
 
 	// Extract IPv4
@@ -400,16 +448,19 @@ func ExtractIPAddresses(text string) []IPAddress {
 		}
 	}
 
-	ips := make([]IPAddress, 0, len(ipMap))
+	var entities []PiiEntity
 	for _, ip := range ipMap {
-		ips = append(ips, *ip)
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeIPAddress,
+			Value: *ip,
+		})
 	}
-	return ips
+	return entities
 }
 
-// ExtractBtcAddresses extracts Bitcoin addresses as BtcAddress value objects with context
-func ExtractBtcAddresses(text string) []BtcAddress {
-	return extractWithContext(text, BtcAddressRegex,
+// ExtractBtcAddresses extracts Bitcoin addresses as PiiEntity objects with context
+func ExtractBtcAddresses(text string) []PiiEntity {
+	btcAddresses := extractWithContext(text, BtcAddressRegex,
 		func(value, context string) BtcAddress {
 			return BtcAddress{
 				Value:    value,
@@ -421,11 +472,20 @@ func ExtractBtcAddresses(text string) []BtcAddress {
 			btc.Count++
 			btc.Contexts = append(btc.Contexts, context)
 		})
+	
+	var entities []PiiEntity
+	for _, btcAddress := range btcAddresses {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeBtcAddress,
+			Value: btcAddress,
+		})
+	}
+	return entities
 }
 
-// ExtractPoBoxesUS extracts US P.O. Boxes as PoBox value objects with context
-func ExtractPoBoxesUS(text string) []PoBox {
-	return extractWithContext(text, PoBoxUSRegex,
+// ExtractPoBoxesUS extracts US P.O. Boxes as PiiEntity objects with context
+func ExtractPoBoxesUS(text string) []PiiEntity {
+	poBoxes := extractWithContext(text, PoBoxUSRegex,
 		func(value, context string) PoBox {
 			return PoBox{
 				Value:    value,
@@ -438,11 +498,20 @@ func ExtractPoBoxesUS(text string) []PoBox {
 			poBox.Count++
 			poBox.Contexts = append(poBox.Contexts, context)
 		})
+	
+	var entities []PiiEntity
+	for _, poBox := range poBoxes {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypePoBox,
+			Value: poBox,
+		})
+	}
+	return entities
 }
 
-// ExtractIBANs extracts IBANs as IBAN value objects with context
-func ExtractIBANs(text string) []IBAN {
-	return extractWithContext(text, IBANRegex,
+// ExtractIBANs extracts IBANs as PiiEntity objects with context
+func ExtractIBANs(text string) []PiiEntity {
+	ibans := extractWithContext(text, IBANRegex,
 		func(value, context string) IBAN {
 			country := ""
 			if len(value) >= 2 {
@@ -459,4 +528,13 @@ func ExtractIBANs(text string) []IBAN {
 			iban.Count++
 			iban.Contexts = append(iban.Contexts, context)
 		})
+	
+	var entities []PiiEntity
+	for _, iban := range ibans {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeIBAN,
+			Value: iban,
+		})
+	}
+	return entities
 }

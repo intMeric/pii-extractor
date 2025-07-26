@@ -1,10 +1,64 @@
 package piiextractor
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
 )
+
+// MockLLMValidator is a test implementation of LLMValidator
+type MockLLMValidator struct {
+	validateEntityFunc func(ctx context.Context, entity PiiEntity, context string) (*ValidationResult, error)
+	healthCheckFunc    func(ctx context.Context) error
+	provider           string
+	model              string
+}
+
+func (m *MockLLMValidator) ValidateEntity(ctx context.Context, entity PiiEntity, context string) (*ValidationResult, error) {
+	if m.validateEntityFunc != nil {
+		return m.validateEntityFunc(ctx, entity, context)
+	}
+	// Default mock behavior - mark everything as valid with high confidence
+	return &ValidationResult{
+		Valid:      true,
+		Confidence: 0.9,
+		Reasoning:  "Mock validation result",
+		Provider:   m.provider,
+		Model:      m.model,
+	}, nil
+}
+
+func (m *MockLLMValidator) ValidateBatch(ctx context.Context, entities []PiiEntity, contexts []string) ([]*ValidationResult, error) {
+	results := make([]*ValidationResult, len(entities))
+	for i, entity := range entities {
+		result, err := m.ValidateEntity(ctx, entity, contexts[i])
+		if err != nil {
+			return nil, err
+		}
+		results[i] = result
+	}
+	return results, nil
+}
+
+func (m *MockLLMValidator) HealthCheck(ctx context.Context) error {
+	if m.healthCheckFunc != nil {
+		return m.healthCheckFunc(ctx)
+	}
+	return nil
+}
+
+func (m *MockLLMValidator) GetProviderInfo() (provider string, model string) {
+	return m.provider, m.model
+}
+
+// NewMockValidator creates a new mock validator for testing
+func NewMockValidator(provider, model string) *MockLLMValidator {
+	return &MockLLMValidator{
+		provider: provider,
+		model:    model,
+	}
+}
 
 func TestDefaultValidationConfig(t *testing.T) {
 	config := DefaultValidationConfig()
@@ -157,15 +211,29 @@ func TestValidatedExtractorCreation(t *testing.T) {
 		t.Error("Expected validation to be disabled by default")
 	}
 
-	// Test with validation enabled
+	// Test with validation enabled but using mock validator
 	config := DefaultValidationConfig()
 	config.Enabled = true
-	config.APIKey = "test-key" // Set a test API key
+	config.APIKey = "test-key"
 
-	// Note: This will fail in tests without a real API key, but tests the structure
-	_, err = NewValidatedExtractor(baseExtractor, config)
-	// We expect this to potentially fail due to missing API key, but the structure should be correct
-	// In a real test environment, you'd use mock services
+	// Create extractor with validation enabled
+	validatedExtractor, err := NewValidatedExtractor(baseExtractor, config)
+	if err != nil {
+		// This is expected to fail with real API calls, so we'll create a mock version
+		t.Logf("Real API creation failed as expected: %v", err)
+
+		// Create a mock validated extractor for testing
+		mockValidator := NewMockValidator("openai", "gpt-4o-mini")
+		validatedExtractor = &ValidatedExtractor{
+			baseExtractor: baseExtractor,
+			validator:     mockValidator,
+			config:        config,
+		}
+	}
+
+	if !validatedExtractor.IsValidationEnabled() {
+		t.Error("Expected validation to be enabled with mock validator")
+	}
 }
 
 func TestValidatedExtractorBasicExtraction(t *testing.T) {
@@ -411,5 +479,152 @@ func BenchmarkParseValidationResponse(b *testing.B) {
 		if err != nil {
 			b.Fatalf("Parsing failed: %v", err)
 		}
+	}
+}
+
+// Test ValidatedExtractor with mock validation
+func TestValidatedExtractorWithMockValidation(t *testing.T) {
+	baseExtractor := NewRegexExtractor()
+	config := DefaultValidationConfig()
+	config.Enabled = true
+
+	// Create mock validator
+	mockValidator := NewMockValidator("openai", "gpt-4o-mini")
+
+	// Create validated extractor with mock
+	extractor := &ValidatedExtractor{
+		baseExtractor: baseExtractor,
+		validator:     mockValidator,
+		config:        config,
+	}
+
+	text := "Contact me at john@example.com or call 555-123-4567"
+	result, err := extractor.ExtractWithValidation(text)
+	if err != nil {
+		t.Fatalf("Failed to extract with validation: %v", err)
+	}
+
+	if result.IsEmpty() {
+		t.Error("Expected to find PII entities")
+	}
+
+	// Verify validation was performed
+	validatedCount := 0
+	for _, entity := range result.Entities {
+		if entity.IsValidated() {
+			validatedCount++
+			if !entity.IsValid() {
+				t.Error("Mock validator should mark entities as valid")
+			}
+			if entity.GetValidationConfidence() != 0.9 {
+				t.Errorf("Expected confidence 0.9, got %f", entity.GetValidationConfidence())
+			}
+		}
+	}
+
+	if validatedCount == 0 {
+		t.Error("Expected some entities to be validated")
+	}
+
+	// Check validation stats
+	if result.ValidationStats == nil {
+		t.Error("Expected validation stats to be present")
+	} else {
+		if result.ValidationStats.Provider != "openai" {
+			t.Errorf("Expected provider 'openai', got '%s'", result.ValidationStats.Provider)
+		}
+		if result.ValidationStats.Model != "gpt-4o-mini" {
+			t.Errorf("Expected model 'gpt-4o-mini', got '%s'", result.ValidationStats.Model)
+		}
+	}
+}
+
+// Test mock validator with custom behavior
+func TestMockValidatorCustomBehavior(t *testing.T) {
+	mockValidator := NewMockValidator("test-provider", "test-model")
+
+	// Set custom validation behavior
+	mockValidator.validateEntityFunc = func(ctx context.Context, entity PiiEntity, context string) (*ValidationResult, error) {
+		// Mark emails as invalid, everything else as valid
+		isValid := !entity.IsEmail()
+		confidence := 0.8
+		if isValid {
+			confidence = 0.95
+		}
+
+		return &ValidationResult{
+			Valid:      isValid,
+			Confidence: confidence,
+			Reasoning:  "Custom mock validation logic",
+			Provider:   "test-provider",
+			Model:      "test-model",
+		}, nil
+	}
+
+	// Test the custom behavior
+	emailEntity := PiiEntity{
+		Type:  PiiTypeEmail,
+		Value: NewEmail("test@example.com"),
+	}
+
+	phoneEntity := PiiEntity{
+		Type:  PiiTypePhone,
+		Value: NewPhoneUS("555-123-4567"),
+	}
+
+	// Test email validation (should be invalid)
+	ctx := context.Background()
+	result, err := mockValidator.ValidateEntity(ctx, emailEntity, "context")
+	if err != nil {
+		t.Fatalf("Validation failed: %v", err)
+	}
+
+	if result.Valid {
+		t.Error("Expected email to be marked as invalid by custom mock")
+	}
+
+	if result.Confidence != 0.8 {
+		t.Errorf("Expected confidence 0.8, got %f", result.Confidence)
+	}
+
+	// Test phone validation (should be valid)
+	result, err = mockValidator.ValidateEntity(ctx, phoneEntity, "context")
+	if err != nil {
+		t.Fatalf("Validation failed: %v", err)
+	}
+
+	if !result.Valid {
+		t.Error("Expected phone to be marked as valid by custom mock")
+	}
+
+	if result.Confidence != 0.95 {
+		t.Errorf("Expected confidence 0.95, got %f", result.Confidence)
+	}
+}
+
+// Test health check with mock
+func TestMockValidatorHealthCheck(t *testing.T) {
+	mockValidator := NewMockValidator("test-provider", "test-model")
+
+	// Test default health check (should pass)
+	ctx := context.Background()
+	err := mockValidator.HealthCheck(ctx)
+	if err != nil {
+		t.Errorf("Expected health check to pass, got error: %v", err)
+	}
+
+	// Test custom health check behavior
+	expectedError := NewPiiError("health_check_failed", "Mock health check failure")
+	mockValidator.healthCheckFunc = func(ctx context.Context) error {
+		return expectedError
+	}
+
+	err = mockValidator.HealthCheck(ctx)
+	if err == nil {
+		t.Error("Expected health check to fail with custom function")
+	}
+
+	if err.Error() != expectedError.Error() {
+		t.Errorf("Expected error '%s', got '%s'", expectedError.Error(), err.Error())
 	}
 }

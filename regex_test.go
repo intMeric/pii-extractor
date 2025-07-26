@@ -914,3 +914,389 @@ func TestExtractSSNsUS(t *testing.T) {
 		})
 	}
 }
+
+// International PII Tests
+
+func TestUKPostalCodeExtraction(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "standard UK postcode format",
+			input:    "Please send mail to SW1A 1AA",
+			expected: []string{"SW1A 1AA"},
+		},
+		{
+			name:     "UK postcode without space",
+			input:    "Location: M11AA Manchester",
+			expected: []string{"M11AA"},
+		},
+		{
+			name:     "multiple UK postcodes",
+			input:    "From W1A 0AX to EC1A 1BB",
+			expected: []string{"W1A 0AX", "EC1A 1BB"},
+		},
+		{
+			name:     "London postcode formats",
+			input:    "Office at E1 6AN and home at SW1P 3BU",
+			expected: []string{"E1 6AN", "SW1P 3BU"},
+		},
+		{
+			name:     "invalid UK postcode formats",
+			input:    "Invalid: 123456, A1B 2C3D, XYZ",
+			expected: []string{},
+		},
+		{
+			name:     "no UK postcodes",
+			input:    "This text has no British postal codes",
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := PostalCodesUK(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("PostalCodesUK() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFrancePostalCodeExtraction(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "standard France postal code",
+			input:    "Paris office at 75001",
+			expected: []string{"75001"},
+		},
+		{
+			name:     "multiple France postal codes",
+			input:    "From 69001 Lyon to 13001 Marseille",
+			expected: []string{"69001", "13001"},
+		},
+		{
+			name:     "France postal codes in address",
+			input:    "Address: 123 rue de la Paix, 75008 Paris",
+			expected: []string{"75008"},
+		},
+		{
+			name:     "overseas territories",
+			input:    "Guadeloupe: 97110, Martinique: 97200",
+			expected: []string{"97110", "97200"},
+		},
+		{
+			name:     "invalid France postal codes",
+			input:    "Invalid: 123, 1234, 123456, 00000",
+			expected: []string{},
+		},
+		{
+			name:     "no France postal codes",
+			input:    "This text has no French postal codes",
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := PostalCodesFrance(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("PostalCodesFrance() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSpainPostalCodeExtraction(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "standard Spain postal code",
+			input:    "Madrid office at 28001",
+			expected: []string{"28001"},
+		},
+		{
+			name:     "multiple Spain postal codes",
+			input:    "From 08001 Barcelona to 41001 Sevilla",
+			expected: []string{"08001", "41001"},
+		},
+		{
+			name:     "Spain postal codes in address",
+			input:    "Dirección: Calle Mayor 123, 28013 Madrid",
+			expected: []string{"28013"},
+		},
+		{
+			name:     "Canary Islands postal codes",
+			input:    "Las Palmas: 35001, Santa Cruz: 38001",
+			expected: []string{"35001", "38001"},
+		},
+		{
+			name:     "invalid Spain postal codes",
+			input:    "Invalid: 123, 1234, 123456, 00000",
+			expected: []string{},
+		},
+		{
+			name:     "no Spain postal codes",
+			input:    "This text has no Spanish postal codes",
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := PostalCodesSpain(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("PostalCodesSpain() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestItalyPostalCodeExtraction(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "standard Italy postal code",
+			input:    "Rome office at 00100",
+			expected: []string{"00100"},
+		},
+		{
+			name:     "multiple Italy postal codes",
+			input:    "From 20100 Milano to 80100 Napoli",
+			expected: []string{"20100", "80100"},
+		},
+		{
+			name:     "Italy postal codes in address",
+			input:    "Indirizzo: Via del Corso 123, 00186 Roma",
+			expected: []string{"00186"},
+		},
+		{
+			name:     "Sicily and Sardinia postal codes",
+			input:    "Palermo: 90100, Cagliari: 09100",
+			expected: []string{"90100", "09100"},
+		},
+		{
+			name:     "invalid Italy postal codes",
+			input:    "Invalid: 123, 1234, 123456",
+			expected: []string{},
+		},
+		{
+			name:     "no Italy postal codes",
+			input:    "This text has no Italian postal codes",
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := PostalCodesItaly(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("PostalCodesItaly() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestUKAddressExtraction(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "standard UK street address",
+			input:    "Address: 123 Oxford Street, London",
+			expected: []string{"123 Oxford Street"},
+		},
+		{
+			name:     "UK address with Road",
+			input:    "Location: 456 Abbey Road, Westminster",
+			expected: []string{"456 Abbey Road"},
+		},
+		{
+			name:     "multiple UK addresses",
+			input:    "From 10 Downing Street to 221B Baker Street",
+			expected: []string{"10 Downing Street", "221B Baker Street"},
+		},
+		{
+			name:     "UK addresses with various types",
+			input:    "Properties: 100 High Street, 200 Church Lane, 300 Market Square",
+			expected: []string{"100 High Street", "200 Church Lane", "300 Market Square"},
+		},
+		{
+			name:     "invalid UK addresses",
+			input:    "Invalid: Oxford Street, 123, Street without number",
+			expected: []string{},
+		},
+		{
+			name:     "no UK addresses",
+			input:    "This text has no British street addresses",
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := StreetAddressesUK(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("StreetAddressesUK() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFranceAddressExtraction(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "standard France street address",
+			input:    "Adresse: 123 rue de la Paix, Paris",
+			expected: []string{"123 rue de la Paix"},
+		},
+		{
+			name:     "France address with Avenue",
+			input:    "Location: 456 avenue des Champs-Élysées",
+			expected: []string{"456 avenue des Champs-Élysées"},
+		},
+		{
+			name:     "multiple France addresses",
+			input:    "From 10 boulevard Saint-Germain to 25 place de la Bastille",
+			expected: []string{"10 boulevard Saint-Germain", "25 place de la Bastille"},
+		},
+		{
+			name:     "France addresses with various types",
+			input:    "Properties: 100 rue Victor Hugo, 200 impasse Mozart, 300 allée des Roses",
+			expected: []string{"100 rue Victor Hugo", "200 impasse Mozart", "300 allée des Roses"},
+		},
+		{
+			name:     "invalid France addresses",
+			input:    "Invalid: rue de la Paix, 123, Street without number",
+			expected: []string{},
+		},
+		{
+			name:     "no France addresses",
+			input:    "This text has no French street addresses",
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := StreetAddressesFrance(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("StreetAddressesFrance() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSpainAddressExtraction(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "standard Spain street address",
+			input:    "Dirección: 123 Calle Mayor, Madrid",
+			expected: []string{"123 Calle Mayor"},
+		},
+		{
+			name:     "Spain address with Avenida",
+			input:    "Location: 456 Avenida de la Constitución",
+			expected: []string{"456 Avenida de la Constitución"},
+		},
+		{
+			name:     "multiple Spain addresses",
+			input:    "From 10 Plaza de España to 25 Paseo de Gracia",
+			expected: []string{"10 Plaza de España", "25 Paseo de Gracia"},
+		},
+		{
+			name:     "Spain addresses with various types",
+			input:    "Properties: 100 Calle Real, 200 Travesía del Carmen, 300 Ronda de Toledo",
+			expected: []string{"100 Calle Real", "200 Travesía del Carmen", "300 Ronda de Toledo"},
+		},
+		{
+			name:     "invalid Spain addresses",
+			input:    "Invalid: Calle Mayor, 123, Street without number",
+			expected: []string{},
+		},
+		{
+			name:     "no Spain addresses",
+			input:    "This text has no Spanish street addresses",
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := StreetAddressesSpain(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("StreetAddressesSpain() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestItalyAddressExtraction(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "standard Italy street address",
+			input:    "Indirizzo: 123 Via del Corso, Roma",
+			expected: []string{"123 Via del Corso"},
+		},
+		{
+			name:     "Italy address with Piazza",
+			input:    "Location: 456 Piazza San Marco",
+			expected: []string{"456 Piazza San Marco"},
+		},
+		{
+			name:     "multiple Italy addresses",
+			input:    "From 10 Via Veneto to 25 Corso Buenos Aires",
+			expected: []string{"10 Via Veneto", "25 Corso Buenos Aires"},
+		},
+		{
+			name:     "Italy addresses with various types",
+			input:    "Properties: 100 Via Roma, 200 Viale Europa, 300 Largo Argentina",
+			expected: []string{"100 Via Roma", "200 Viale Europa", "300 Largo Argentina"},
+		},
+		{
+			name:     "invalid Italy addresses",
+			input:    "Invalid: Via del Corso, 123, Street without number",
+			expected: []string{},
+		},
+		{
+			name:     "no Italy addresses",
+			input:    "This text has no Italian street addresses",
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := StreetAddressesItaly(tt.input)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("StreetAddressesItaly() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}

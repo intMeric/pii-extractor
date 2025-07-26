@@ -15,6 +15,18 @@ const (
 	PoBoxUSPattern          = `(?i)P\.? ?O\.? Box \d+`
 	SSNUSPattern            = `(?:\d{3}-\d{2}-\d{4})`
 
+	// International postal code patterns
+	PostalCodeUKPattern     = `(?i)\b([A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2})\b`
+	PostalCodeFrancePattern = `\b(?:0[1-9]|[1-8]\d|9[0-8])\d{3}\b`
+	PostalCodeSpainPattern  = `\b(?:0[1-9]|[1-4]\d|5[0-2])\d{3}\b`
+	PostalCodeItalyPattern  = `\b(?:0[0-9]|[1-9]\d)\d{3}\b`
+
+	// International street address patterns
+	StreetAddressUKPattern     = `(?i)\b\d{1,4}[a-z]?\s+[a-z\-]+(?:\s+[a-z\-]+)*\s+(?:street|st|road|rd|lane|ln|avenue|ave|place|pl|square|sq|crescent|cres|close|cl|way|drive|dr|court|ct|terrace|ter|gardens|gdns|mews|hill|park|green|common|grove|rise|view|walk|bridge|manor|vale|row|circus|gate|heights|fields|meadow|cottage|house|villa|lodge|chambers|buildings|flats|towers|hall)\b`
+	StreetAddressFrancePattern = `(?i)\b\d{1,4}\s+(?:rue|avenue|boulevard|place|impasse|allée|cours|quai|passage|square|villa|cité|résidence|hameau|chemin|route|voie|esplanade|promenade|parvis|mail|galerie|sentier|traverse|venelle)\s+(?:de\s+)?(?:la\s+|le\s+|les\s+|du\s+|des\s+)?[a-z\-'éèàçôöùûîôâêë]+(?:\s+[a-z\-'éèàçôöùûîôâêë]+){0,2}`
+	StreetAddressSpainPattern  = `(?i)\b\d{1,4}\s+(?:calle|avenida|plaza|paseo|ronda|travesía|glorieta|carretera|camino|vía|callejón|callejuela|costanilla|corredera|rambla|alameda|boulevard|pasaje)\s+(?:de\s+)?(?:la\s+|el\s+|los\s+|las\s+|del\s+|de\s+los\s+|de\s+las\s+)?[a-z\-'ñáéíóúü]+(?:\s+[a-z\-'ñáéíóúü]+){0,2}`
+	StreetAddressItalyPattern  = `(?i)\b\d{1,4}\s+(?:via|viale|piazza|corso|largo|strada|vicolo|piazzale|lungotevere|circonvallazione|passeggiata|salita|discesa|scalinata|rampa)\s+(?:del\s+|della\s+|dei\s+|delle\s+|di\s+)?[a-z\-'àèéìíîòóùú]+(?:\s+[a-z\-'àèéìíîòóùú]+){0,2}`
+
 	// International/generic patterns
 	EmailPattern          = `(?i)([A-Za-z0-9!#$%&'*+\/=?^_{|.}~-]+@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)`
 	IPv4Pattern           = `(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)`
@@ -36,6 +48,18 @@ var (
 	ZipCodeUSRegex        = regexp.MustCompile(ZipCodeUSPattern)
 	PoBoxUSRegex          = regexp.MustCompile(PoBoxUSPattern)
 	SSNUSRegex            = regexp.MustCompile(SSNUSPattern)
+
+	// International postal code compiled patterns
+	PostalCodeUKRegex     = regexp.MustCompile(PostalCodeUKPattern)
+	PostalCodeFranceRegex = regexp.MustCompile(PostalCodeFrancePattern)
+	PostalCodeSpainRegex  = regexp.MustCompile(PostalCodeSpainPattern)
+	PostalCodeItalyRegex  = regexp.MustCompile(PostalCodeItalyPattern)
+
+	// International street address compiled patterns
+	StreetAddressUKRegex     = regexp.MustCompile(StreetAddressUKPattern)
+	StreetAddressFranceRegex = regexp.MustCompile(StreetAddressFrancePattern)
+	StreetAddressSpainRegex  = regexp.MustCompile(StreetAddressSpainPattern)
+	StreetAddressItalyRegex  = regexp.MustCompile(StreetAddressItalyPattern)
 
 	// International/generic compiled patterns
 	EmailRegex          = regexp.MustCompile(EmailPattern)
@@ -164,6 +188,18 @@ var StreetAddressesUS = func(text string) []string { return match(text, StreetAd
 var ZipCodesUS = func(text string) []string { return match(text, ZipCodeUSRegex) }
 var PoBoxesUS = func(text string) []string { return match(text, PoBoxUSRegex) }
 var SSNsUS = func(text string) []string { return match(text, SSNUSRegex) }
+
+// International postal code convenience functions
+var PostalCodesUK = func(text string) []string { return match(text, PostalCodeUKRegex) }
+var PostalCodesFrance = func(text string) []string { return match(text, PostalCodeFranceRegex) }
+var PostalCodesSpain = func(text string) []string { return match(text, PostalCodeSpainRegex) }
+var PostalCodesItaly = func(text string) []string { return match(text, PostalCodeItalyRegex) }
+
+// International street address convenience functions
+var StreetAddressesUK = func(text string) []string { return match(text, StreetAddressUKRegex) }
+var StreetAddressesFrance = func(text string) []string { return match(text, StreetAddressFranceRegex) }
+var StreetAddressesSpain = func(text string) []string { return match(text, StreetAddressSpainRegex) }
+var StreetAddressesItaly = func(text string) []string { return match(text, StreetAddressItalyRegex) }
 
 // International/generic convenience functions
 var Emails = func(text string) []string { return match(text, EmailRegex) }
@@ -560,6 +596,232 @@ func ExtractIBANs(text string) []PiiEntity {
 		entities = append(entities, PiiEntity{
 			Type:  PiiTypeIBAN,
 			Value: iban,
+		})
+	}
+	return entities
+}
+
+// International PII extraction functions
+
+// ExtractPostalCodesUK extracts UK postal codes as PiiEntity objects with context
+func ExtractPostalCodesUK(text string) []PiiEntity {
+	postalCodes := extractWithContext(text, PostalCodeUKRegex,
+		func(value, context string) ZipCode {
+			return ZipCode{
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "UK",
+			}
+		},
+		func(zipCode *ZipCode, context string) {
+			zipCode.BasePii.IncrementCount()
+			zipCode.BasePii.AddContext(context)
+		})
+
+	var entities []PiiEntity
+	for _, zipCode := range postalCodes {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeZipCode,
+			Value: zipCode,
+		})
+	}
+	return entities
+}
+
+// ExtractPostalCodesFrance extracts France postal codes as PiiEntity objects with context
+func ExtractPostalCodesFrance(text string) []PiiEntity {
+	postalCodes := extractWithContext(text, PostalCodeFranceRegex,
+		func(value, context string) ZipCode {
+			return ZipCode{
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "France",
+			}
+		},
+		func(zipCode *ZipCode, context string) {
+			zipCode.BasePii.IncrementCount()
+			zipCode.BasePii.AddContext(context)
+		})
+
+	var entities []PiiEntity
+	for _, zipCode := range postalCodes {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeZipCode,
+			Value: zipCode,
+		})
+	}
+	return entities
+}
+
+// ExtractPostalCodesSpain extracts Spain postal codes as PiiEntity objects with context
+func ExtractPostalCodesSpain(text string) []PiiEntity {
+	postalCodes := extractWithContext(text, PostalCodeSpainRegex,
+		func(value, context string) ZipCode {
+			return ZipCode{
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Spain",
+			}
+		},
+		func(zipCode *ZipCode, context string) {
+			zipCode.BasePii.IncrementCount()
+			zipCode.BasePii.AddContext(context)
+		})
+
+	var entities []PiiEntity
+	for _, zipCode := range postalCodes {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeZipCode,
+			Value: zipCode,
+		})
+	}
+	return entities
+}
+
+// ExtractPostalCodesItaly extracts Italy postal codes as PiiEntity objects with context
+func ExtractPostalCodesItaly(text string) []PiiEntity {
+	postalCodes := extractWithContext(text, PostalCodeItalyRegex,
+		func(value, context string) ZipCode {
+			return ZipCode{
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Italy",
+			}
+		},
+		func(zipCode *ZipCode, context string) {
+			zipCode.BasePii.IncrementCount()
+			zipCode.BasePii.AddContext(context)
+		})
+
+	var entities []PiiEntity
+	for _, zipCode := range postalCodes {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeZipCode,
+			Value: zipCode,
+		})
+	}
+	return entities
+}
+
+// ExtractStreetAddressesUK extracts UK street addresses as PiiEntity objects with context
+func ExtractStreetAddressesUK(text string) []PiiEntity {
+	addresses := extractWithContext(text, StreetAddressUKRegex,
+		func(value, context string) StreetAddress {
+			return StreetAddress{
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "UK",
+			}
+		},
+		func(address *StreetAddress, context string) {
+			address.BasePii.IncrementCount()
+			address.BasePii.AddContext(context)
+		})
+
+	var entities []PiiEntity
+	for _, address := range addresses {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeStreetAddress,
+			Value: address,
+		})
+	}
+	return entities
+}
+
+// ExtractStreetAddressesFrance extracts France street addresses as PiiEntity objects with context
+func ExtractStreetAddressesFrance(text string) []PiiEntity {
+	addresses := extractWithContext(text, StreetAddressFranceRegex,
+		func(value, context string) StreetAddress {
+			return StreetAddress{
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "France",
+			}
+		},
+		func(address *StreetAddress, context string) {
+			address.BasePii.IncrementCount()
+			address.BasePii.AddContext(context)
+		})
+
+	var entities []PiiEntity
+	for _, address := range addresses {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeStreetAddress,
+			Value: address,
+		})
+	}
+	return entities
+}
+
+// ExtractStreetAddressesSpain extracts Spain street addresses as PiiEntity objects with context
+func ExtractStreetAddressesSpain(text string) []PiiEntity {
+	addresses := extractWithContext(text, StreetAddressSpainRegex,
+		func(value, context string) StreetAddress {
+			return StreetAddress{
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Spain",
+			}
+		},
+		func(address *StreetAddress, context string) {
+			address.BasePii.IncrementCount()
+			address.BasePii.AddContext(context)
+		})
+
+	var entities []PiiEntity
+	for _, address := range addresses {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeStreetAddress,
+			Value: address,
+		})
+	}
+	return entities
+}
+
+// ExtractStreetAddressesItaly extracts Italy street addresses as PiiEntity objects with context
+func ExtractStreetAddressesItaly(text string) []PiiEntity {
+	addresses := extractWithContext(text, StreetAddressItalyRegex,
+		func(value, context string) StreetAddress {
+			return StreetAddress{
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Italy",
+			}
+		},
+		func(address *StreetAddress, context string) {
+			address.BasePii.IncrementCount()
+			address.BasePii.AddContext(context)
+		})
+
+	var entities []PiiEntity
+	for _, address := range addresses {
+		entities = append(entities, PiiEntity{
+			Type:  PiiTypeStreetAddress,
+			Value: address,
 		})
 	}
 	return entities

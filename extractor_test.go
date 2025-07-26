@@ -6,7 +6,7 @@ import (
 
 func TestRegexExtractor_Extract(t *testing.T) {
 	extractor := NewRegexExtractor()
-	
+
 	text := `
 		Contact John at john.doe@email.com or call him at (555) 123-4567.
 		His address is 123 Main Street and his SSN is 123-45-6789.
@@ -46,7 +46,7 @@ func TestRegexExtractor_Extract(t *testing.T) {
 
 func TestRegexExtractor_EmptyText(t *testing.T) {
 	extractor := NewRegexExtractor()
-	
+
 	result, err := extractor.Extract("")
 	if err != nil {
 		t.Fatalf("Extract() error = %v", err)
@@ -59,9 +59,9 @@ func TestRegexExtractor_EmptyText(t *testing.T) {
 
 func TestRegexExtractor_TypeAssertions(t *testing.T) {
 	extractor := NewRegexExtractor()
-	
+
 	text := "Contact me at test@example.com or call (555) 123-4567"
-	
+
 	result, err := extractor.Extract(text)
 	if err != nil {
 		t.Fatalf("Extract() error = %v", err)

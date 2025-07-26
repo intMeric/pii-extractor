@@ -208,17 +208,19 @@ func ExtractPhonesUS(text string) []PiiEntity {
 	phones := extractWithContext(text, PhoneUSRegex,
 		func(value, context string) Phone {
 			return Phone{
-				Value:    value,
-				Country:  "US",
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "US",
 			}
 		},
 		func(phone *Phone, context string) {
-			phone.Count++
-			phone.Contexts = append(phone.Contexts, context)
+			phone.BasePii.IncrementCount()
+			phone.BasePii.AddContext(context)
 		})
-	
+
 	var entities []PiiEntity
 	for _, phone := range phones {
 		entities = append(entities, PiiEntity{
@@ -234,16 +236,18 @@ func ExtractEmails(text string) []PiiEntity {
 	emails := extractWithContext(text, EmailRegex,
 		func(value, context string) Email {
 			return Email{
-				Value:    value,
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
 			}
 		},
 		func(email *Email, context string) {
-			email.Count++
-			email.Contexts = append(email.Contexts, context)
+			email.BasePii.IncrementCount()
+			email.BasePii.AddContext(context)
 		})
-	
+
 	var entities []PiiEntity
 	for _, email := range emails {
 		entities = append(entities, PiiEntity{
@@ -259,17 +263,19 @@ func ExtractSSNsUS(text string) []PiiEntity {
 	ssns := extractWithContext(text, SSNUSRegex,
 		func(value, context string) SSN {
 			return SSN{
-				Value:    value,
-				Country:  "US",
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "US",
 			}
 		},
 		func(ssn *SSN, context string) {
-			ssn.Count++
-			ssn.Contexts = append(ssn.Contexts, context)
+			ssn.BasePii.IncrementCount()
+			ssn.BasePii.AddContext(context)
 		})
-	
+
 	var entities []PiiEntity
 	for _, ssn := range ssns {
 		entities = append(entities, PiiEntity{
@@ -285,17 +291,19 @@ func ExtractZipCodesUS(text string) []PiiEntity {
 	zipCodes := extractWithContext(text, ZipCodeUSRegex,
 		func(value, context string) ZipCode {
 			return ZipCode{
-				Value:    value,
-				Country:  "US",
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "US",
 			}
 		},
 		func(zipCode *ZipCode, context string) {
-			zipCode.Count++
-			zipCode.Contexts = append(zipCode.Contexts, context)
+			zipCode.BasePii.IncrementCount()
+			zipCode.BasePii.AddContext(context)
 		})
-	
+
 	var entities []PiiEntity
 	for _, zipCode := range zipCodes {
 		entities = append(entities, PiiEntity{
@@ -311,17 +319,19 @@ func ExtractStreetAddressesUS(text string) []PiiEntity {
 	addresses := extractWithContext(text, StreetAddressUSRegex,
 		func(value, context string) StreetAddress {
 			return StreetAddress{
-				Value:    value,
-				Country:  "US",
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "US",
 			}
 		},
 		func(address *StreetAddress, context string) {
-			address.Count++
-			address.Contexts = append(address.Contexts, context)
+			address.BasePii.IncrementCount()
+			address.BasePii.AddContext(context)
 		})
-	
+
 	var entities []PiiEntity
 	for _, address := range addresses {
 		entities = append(entities, PiiEntity{
@@ -344,14 +354,16 @@ func ExtractCreditCards(text string) []PiiEntity {
 		context := extractContext(text, start, end)
 
 		if card, exists := cardMap[value]; exists {
-			card.Count++
-			card.Contexts = append(card.Contexts, context)
+			card.BasePii.IncrementCount()
+			card.BasePii.AddContext(context)
 		} else {
 			cardMap[value] = &CreditCard{
-				Value:    value,
-				Type:     "visa",
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Type: "visa",
 			}
 		}
 	}
@@ -364,14 +376,16 @@ func ExtractCreditCards(text string) []PiiEntity {
 		context := extractContext(text, start, end)
 
 		if card, exists := cardMap[value]; exists {
-			card.Count++
-			card.Contexts = append(card.Contexts, context)
+			card.BasePii.IncrementCount()
+			card.BasePii.AddContext(context)
 		} else {
 			cardMap[value] = &CreditCard{
-				Value:    value,
-				Type:     "mastercard",
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Type: "mastercard",
 			}
 		}
 	}
@@ -386,10 +400,12 @@ func ExtractCreditCards(text string) []PiiEntity {
 		// Skip if already found as VISA or MC
 		if _, exists := cardMap[value]; !exists {
 			cardMap[value] = &CreditCard{
-				Value:    value,
-				Type:     "generic",
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Type: "generic",
 			}
 		}
 	}
@@ -416,14 +432,16 @@ func ExtractIPAddresses(text string) []PiiEntity {
 		context := extractContext(text, start, end)
 
 		if ip, exists := ipMap[value]; exists {
-			ip.Count++
-			ip.Contexts = append(ip.Contexts, context)
+			ip.BasePii.IncrementCount()
+			ip.BasePii.AddContext(context)
 		} else {
 			ipMap[value] = &IPAddress{
-				Value:    value,
-				Version:  "ipv4",
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Version: "ipv4",
 			}
 		}
 	}
@@ -436,14 +454,16 @@ func ExtractIPAddresses(text string) []PiiEntity {
 		context := extractContext(text, start, end)
 
 		if ip, exists := ipMap[value]; exists {
-			ip.Count++
-			ip.Contexts = append(ip.Contexts, context)
+			ip.BasePii.IncrementCount()
+			ip.BasePii.AddContext(context)
 		} else {
 			ipMap[value] = &IPAddress{
-				Value:    value,
-				Version:  "ipv6",
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Version: "ipv6",
 			}
 		}
 	}
@@ -463,16 +483,18 @@ func ExtractBtcAddresses(text string) []PiiEntity {
 	btcAddresses := extractWithContext(text, BtcAddressRegex,
 		func(value, context string) BtcAddress {
 			return BtcAddress{
-				Value:    value,
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
 			}
 		},
 		func(btc *BtcAddress, context string) {
-			btc.Count++
-			btc.Contexts = append(btc.Contexts, context)
+			btc.BasePii.IncrementCount()
+			btc.BasePii.AddContext(context)
 		})
-	
+
 	var entities []PiiEntity
 	for _, btcAddress := range btcAddresses {
 		entities = append(entities, PiiEntity{
@@ -488,17 +510,19 @@ func ExtractPoBoxesUS(text string) []PiiEntity {
 	poBoxes := extractWithContext(text, PoBoxUSRegex,
 		func(value, context string) PoBox {
 			return PoBox{
-				Value:    value,
-				Country:  "US",
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "US",
 			}
 		},
 		func(poBox *PoBox, context string) {
-			poBox.Count++
-			poBox.Contexts = append(poBox.Contexts, context)
+			poBox.BasePii.IncrementCount()
+			poBox.BasePii.AddContext(context)
 		})
-	
+
 	var entities []PiiEntity
 	for _, poBox := range poBoxes {
 		entities = append(entities, PiiEntity{
@@ -518,17 +542,19 @@ func ExtractIBANs(text string) []PiiEntity {
 				country = value[:2]
 			}
 			return IBAN{
-				Value:    value,
-				Country:  country,
-				Contexts: []string{context},
-				Count:    1,
+				BasePii: BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: country,
 			}
 		},
 		func(iban *IBAN, context string) {
-			iban.Count++
-			iban.Contexts = append(iban.Contexts, context)
+			iban.BasePii.IncrementCount()
+			iban.BasePii.AddContext(context)
 		})
-	
+
 	var entities []PiiEntity
 	for _, iban := range ibans {
 		entities = append(entities, PiiEntity{

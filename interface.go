@@ -46,9 +46,20 @@ func (p PiiType) String() string {
 
 // PiiExtractionResult represents the result of a PII extraction operation
 type PiiExtractionResult struct {
-	Entities []PiiEntity          `json:"entities"`
-	Stats    map[PiiType]int      `json:"stats"`
-	Total    int                  `json:"total"`
+	Entities        []PiiEntity      `json:"entities"`
+	Stats           map[PiiType]int  `json:"stats"`
+	Total           int              `json:"total"`
+	ValidationStats *ValidationStats `json:"validation_stats,omitempty"` // Optional validation statistics
+}
+
+// ValidationStats contains statistics about LLM validation results
+type ValidationStats struct {
+	TotalValidated    int     `json:"total_validated"`
+	ValidCount        int     `json:"valid_count"`
+	InvalidCount      int     `json:"invalid_count"`
+	AverageConfidence float64 `json:"average_confidence"`
+	Provider          string  `json:"provider,omitempty"`
+	Model             string  `json:"model,omitempty"`
 }
 
 // PiiExtractor defines the main interface for extracting PII from text
@@ -56,10 +67,17 @@ type PiiExtractor interface {
 	Extract(text string) (*PiiExtractionResult, error)
 }
 
+// ValidatedPiiExtractor extends PiiExtractor with LLM validation capabilities
+type ValidatedPiiExtractor interface {
+	PiiExtractor
+	ExtractWithValidation(text string) (*PiiExtractionResult, error)
+}
+
 // PiiEntity represents a single PII item found in text
 type PiiEntity struct {
-	Type  PiiType `json:"type"`  // The type of PII (phone, email, ssn, etc.)
-	Value Pii     `json:"value"` // The actual PII value object
+	Type       PiiType           `json:"type"`                 // The type of PII (phone, email, ssn, etc.)
+	Value      Pii               `json:"value"`                // The actual PII value object
+	Validation *ValidationResult `json:"validation,omitempty"` // Optional LLM validation result
 }
 
 // GetTypedValue performs a safe type assertion for the PII value
@@ -182,6 +200,24 @@ func (p PiiEntity) IsIBAN() bool {
 	return p.Type == PiiTypeIBAN
 }
 
+// IsValidated returns true if the entity has been validated by an LLM
+func (p PiiEntity) IsValidated() bool {
+	return p.Validation != nil
+}
+
+// IsValid returns true if the entity is validated and marked as valid
+func (p PiiEntity) IsValid() bool {
+	return p.Validation != nil && p.Validation.Valid
+}
+
+// GetValidationConfidence returns the validation confidence score (0.0 if not validated)
+func (p PiiEntity) GetValidationConfidence() float64 {
+	if p.Validation != nil {
+		return p.Validation.Confidence
+	}
+	return 0.0
+}
+
 // PiiExtractionResult utility methods
 // NewPiiExtractionResult creates a new PiiExtractionResult from entities
 func NewPiiExtractionResult(entities []PiiEntity) *PiiExtractionResult {
@@ -189,7 +225,7 @@ func NewPiiExtractionResult(entities []PiiEntity) *PiiExtractionResult {
 	for _, entity := range entities {
 		stats[entity.Type]++
 	}
-	
+
 	return &PiiExtractionResult{
 		Entities: entities,
 		Stats:    stats,
@@ -266,4 +302,37 @@ func (r *PiiExtractionResult) HasType(piiType PiiType) bool {
 // IsEmpty returns true if no PII entities were found
 func (r *PiiExtractionResult) IsEmpty() bool {
 	return r.Total == 0
+}
+
+// GetValidatedEntities returns only entities that have been validated by LLM
+func (r *PiiExtractionResult) GetValidatedEntities() []PiiEntity {
+	var result []PiiEntity
+	for _, entity := range r.Entities {
+		if entity.IsValidated() {
+			result = append(result, entity)
+		}
+	}
+	return result
+}
+
+// GetValidEntities returns only entities that are validated and marked as valid
+func (r *PiiExtractionResult) GetValidEntities() []PiiEntity {
+	var result []PiiEntity
+	for _, entity := range r.Entities {
+		if entity.IsValid() {
+			result = append(result, entity)
+		}
+	}
+	return result
+}
+
+// GetInvalidEntities returns only entities that are validated but marked as invalid
+func (r *PiiExtractionResult) GetInvalidEntities() []PiiEntity {
+	var result []PiiEntity
+	for _, entity := range r.Entities {
+		if entity.IsValidated() && !entity.IsValid() {
+			result = append(result, entity)
+		}
+	}
+	return result
 }

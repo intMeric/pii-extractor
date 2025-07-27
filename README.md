@@ -1,40 +1,34 @@
 # PII Extractor
 
-A comprehensive Go-based library for extracting and identifying Personally Identifiable Information (PII) from text data. This tool uses regex patterns to detect various types of PII and optionally validates findings using Large Language Models (LLMs) for improved accuracy.
+A comprehensive Go-based library for extracting and identifying Personally Identifiable Information (PII) from text data. This tool provides high-accuracy detection across multiple countries and languages, with intelligent deduplication and optional LLM validation.
 
-## Features
+## 🚀 Features
 
-- **Multi-type PII Detection**: Supports detection of 10+ PII types including:
-  - Phone numbers (US format)
-  - Email addresses
-  - Social Security Numbers (US format)
-  - ZIP codes (US format)
-  - Street addresses (US format)
-  - P.O. Box addresses
-  - Credit card numbers
-  - IP addresses (IPv4/IPv6)
-  - Bitcoin addresses
-  - IBAN numbers
+### Multi-Country Support
+- **United States**: Phone numbers, SSNs, ZIP codes, street addresses, P.O. boxes
+- **United Kingdom**: Postal codes (SW1A 1AA), street addresses (221B Baker Street)
+- **France**: Metropolitan and DOM-TOM postal codes (75001, 97110), street addresses
+- **Spain**: Mainland and island postal codes (28013, 35001), street addresses  
+- **Italy**: All valid postal codes (00186, 20100), street addresses
 
-- **LLM Validation**: Optional validation using multiple LLM providers:
-  - OpenAI (GPT models)
-  - Anthropic (Claude models)
-  - Google Gemini
-  - Mistral AI
-  - Ollama (local models)
+### Comprehensive PII Detection
+- **Contact Information**: Email addresses, phone numbers
+- **Government IDs**: Social Security Numbers (US)
+- **Addresses**: Street addresses, postal/ZIP codes, P.O. boxes
+- **Financial**: Credit card numbers (Visa, MasterCard, generic), IBAN numbers
+- **Digital**: IP addresses (IPv4/IPv6), Bitcoin addresses
 
-- **Structured Results**: Returns detailed extraction results with:
-  - Entity counts and statistics
-  - Context information for each finding
-  - Validation confidence scores
-  - Type-safe value objects
+### Advanced Features
+- **Smart Deduplication**: Automatically merges duplicate entities and consolidates contexts
+- **Context Extraction**: Captures surrounding sentences or 8 words before/after for context
+- **High Accuracy**: Improved regex patterns to minimize false positives
+- **LLM Validation**: Optional validation using OpenAI, Anthropic, Gemini, Mistral, or Ollama
+- **Type-Safe API**: Full Go type safety with convenient value objects
 
-- **Type Safety**: Full Go type safety with convenience methods and type assertions
-
-## Installation
+## 📦 Installation
 
 ```bash
-go get github.com/intMeric/pii-extractor
+go get github.com/intMeric/pii-extractor@v0.0.1
 ```
 
 ## Quick Start
@@ -48,25 +42,131 @@ import (
     "fmt"
     "log"
     
-    pii "github.com/intMeric/pii-extractor"
+    piiextractor "github.com/intMeric/pii-extractor"
 )
 
 func main() {
-    // Create a regex-based extractor
-    extractor := pii.NewRegexExtractor()
+    // Create a default regex extractor
+    extractor := piiextractor.NewDefaultRegexExtractor()
+    
+    // Sample text with various PII types
+    text := `
+    Hello, my name is John Doe. You can reach me at john.doe@example.com 
+    or call me at (555) 123-4567. My home address is 123 Main Street, 
+    New York, NY 10001. My credit card number is 4111-1111-1111-1111.
+    `
     
     // Extract PII from text
-    text := "Contact John at john@example.com or call (555) 123-4567"
     result, err := extractor.Extract(text)
     if err != nil {
         log.Fatal(err)
     }
     
-    // Print results
+    // Display summary
     fmt.Printf("Found %d PII entities:\n", result.Total)
-    for _, entity := range result.Entities {
-        fmt.Printf("- %s: %s\n", entity.Type.String(), entity.GetValue())
+    fmt.Printf("Types found: %v\n\n", result.Stats)
+    
+    // Process each entity
+    for i, entity := range result.Entities {
+        fmt.Printf("--- Entity %d ---\n", i+1)
+        fmt.Printf("Type: %s\n", entity.Type)
+        fmt.Printf("Value: %s\n", entity.GetValue())
+        fmt.Printf("Count: %d\n", entity.GetCount())
+        
+        // Show context
+        contexts := entity.GetContexts()
+        if len(contexts) > 0 {
+            fmt.Printf("Context: %s\n", contexts[0])
+        }
+        
+        // Type-specific information
+        switch entity.Type {
+        case piiextractor.PiiTypeEmail:
+            if email, ok := entity.AsEmail(); ok {
+                fmt.Printf("Email domain: %s\n", getEmailDomain(email.GetValue()))
+            }
+        case piiextractor.PiiTypePhone:
+            if phone, ok := entity.AsPhone(); ok {
+                fmt.Printf("Phone country: %s\n", phone.Country)
+            }
+        case piiextractor.PiiTypeCreditCard:
+            if cc, ok := entity.AsCreditCard(); ok {
+                fmt.Printf("Card type: %s\n", cc.Type)
+            }
+        }
+        fmt.Println()
     }
+}
+
+func getEmailDomain(email string) string {
+    for i := len(email) - 1; i >= 0; i-- {
+        if email[i] == '@' {
+            return email[i+1:]
+        }
+    }
+    return ""
+}
+```
+
+### Output Example
+```
+Found 5 PII entities:
+Types found: map[email:1 phone:1 street_address:1 zip_code:1 credit_card:1]
+
+--- Entity 1 ---
+Type: email
+Value: john.doe@example.com
+Count: 1
+Context: Hello, my name is John Doe. You can reach me at john.doe@example.com or call me at (555) 123-4567.
+Email domain: example.com
+
+--- Entity 2 ---
+Type: credit_card
+Value: 4111-1111-1111-1111
+Count: 1
+Context: My credit card number is 4111-1111-1111-1111.
+Card type: visa
+```
+
+### Multi-Country Extraction
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    
+    piiextractor "github.com/intMeric/pii-extractor"
+)
+
+func main() {
+    // Create extractor with specific countries
+    config := &piiextractor.ExtractorConfig{
+        Countries: []string{"US", "UK", "France", "Spain", "Italy"},
+    }
+    extractor := piiextractor.NewExtractor(config)
+    
+    // International text sample
+    text := `
+    UK Address: 221B Baker Street, London SW1A 1AA
+    French Address: 123 rue de la Paix, 75001 Paris
+    Spanish Address: 123 Calle Mayor, 28013 Madrid
+    Italian Address: 123 Via del Corso, 00186 Roma
+    US Phone: (555) 123-4567
+    `
+    
+    result, err := extractor.Extract(text)
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Group by country
+    fmt.Printf("🇺🇸 US Entities: %d\n", len(result.GetUSEntities()))
+    fmt.Printf("🇬🇧 UK Entities: %d\n", len(result.GetUKEntities()))
+    fmt.Printf("🇫🇷 France Entities: %d\n", len(result.GetFranceEntities()))
+    fmt.Printf("🇪🇸 Spain Entities: %d\n", len(result.GetSpainEntities()))
+    fmt.Printf("🇮🇹 Italy Entities: %d\n", len(result.GetItalyEntities()))
 }
 ```
 
@@ -79,24 +179,26 @@ import (
     "fmt"
     "log"
     
-    pii "github.com/intMeric/pii-extractor"
+    piiextractor "github.com/intMeric/pii-extractor"
 )
 
 func main() {
-    // Configure validation
-    config := pii.DefaultValidationConfig()
+    // Configure LLM validation
+    config := piiextractor.DefaultValidationConfig()
     config.Enabled = true
-    config.Provider = pii.ProviderOpenAI
-    config.APIKey = "your-api-key"
+    config.Provider = piiextractor.ProviderOpenAI
+    config.APIKey = "your-openai-api-key"
+    config.Model = "gpt-4"
+    config.MinConfidence = 0.8
     
-    // Create a validated extractor with configuration
-    baseExtractor := pii.NewRegexExtractor()
-    extractor, err := pii.NewValidatedExtractor(baseExtractor, config)
+    // Create validated extractor
+    baseExtractor := piiextractor.NewDefaultRegexExtractor()
+    extractor, err := piiextractor.NewValidatedExtractor(baseExtractor, config)
     if err != nil {
         log.Fatal(err)
     }
     
-    // Extract and validate PII using the configured validation
+    // Extract with validation
     text := "My email is john@example.com and my phone is (555) 123-4567"
     result, err := extractor.ExtractWithValidation(text)
     if err != nil {
@@ -116,77 +218,158 @@ func main() {
 }
 ```
 
-### Advanced Usage
+## 📚 API Reference
 
-To change validation settings, create a new extractor with different configuration:
+### Core Functions
 
 ```go
-// For different validation settings, create a new extractor
-newConfig := &pii.ValidationConfig{
-    Enabled: true,
-    Provider: pii.ProviderMistral,
-    APIKey: "different-api-key",
-    MinConfidence: 0.9,
-}
+// Basic extractors
+func NewDefaultRegexExtractor() PiiExtractor
+func NewRegexExtractor(config *ExtractorConfig) PiiExtractor
+func NewLLMExtractor(provider, model string, config *ExtractorConfig) (PiiExtractor, error)
 
-newExtractor, err := pii.NewValidatedExtractor(baseExtractor, newConfig)
-result, err := newExtractor.ExtractWithValidation(text)
+// Validation
+func NewValidatedExtractor(base PiiExtractor, config *ValidationConfig) (*ValidatedExtractor, error)
+func DefaultValidationConfig() *ValidationConfig
+
+// Registry
+func Register(name string, extractor PiiExtractor) error
+func Get(name string) (PiiExtractor, error)
 ```
 
-## API Reference
+### PII Types
 
-### Core Interfaces
+| Type | Description | Countries | Examples |
+|------|-------------|-----------|----------|
+| `PiiTypeEmail` | Email addresses | Global | `john@example.com` |
+| `PiiTypePhone` | Phone numbers | US | `(555) 123-4567` |
+| `PiiTypeSSN` | Social Security Numbers | US | `123-45-6789` |
+| `PiiTypeZipCode` | Postal/ZIP codes | US, UK, FR, ES, IT | `10001`, `SW1A 1AA`, `75001` |
+| `PiiTypeStreetAddress` | Street addresses | US, UK, FR, ES, IT | `123 Main Street` |
+| `PiiTypePoBox` | P.O. Box addresses | US | `P.O. Box 456` |
+| `PiiTypeCreditCard` | Credit card numbers | Global | `4111-1111-1111-1111` |
+| `PiiTypeIPAddress` | IP addresses | Global | `192.168.1.1`, `::1` |
+| `PiiTypeBtcAddress` | Bitcoin addresses | Global | `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa` |
+| `PiiTypeIBAN` | Bank account numbers | Global | `GB82WEST12345698765432` |
 
-- `PiiExtractor`: Basic extraction interface
-- `ValidatedPiiExtractor`: Extended interface with LLM validation
-- `PiiExtractionResult`: Structured results with statistics and utilities
+### Result Methods
 
-### Supported PII Types
+```go
+// Basic access
+result.Total                     // Total entities found
+result.Stats                     // Map of PiiType -> count
+result.Entities                  // All entities
 
-- `PiiTypePhone`: Phone numbers
-- `PiiTypeEmail`: Email addresses  
-- `PiiTypeSSN`: Social Security Numbers
-- `PiiTypeZipCode`: ZIP/postal codes
-- `PiiTypeStreetAddress`: Street addresses
-- `PiiTypePoBox`: P.O. Box addresses
-- `PiiTypeCreditCard`: Credit card numbers
-- `PiiTypeIPAddress`: IP addresses
-- `PiiTypeBtcAddress`: Bitcoin addresses
-- `PiiTypeIBAN`: International Bank Account Numbers
+// Filtering
+result.GetEntitiesByType(piiType)    // Filter by type
+result.GetEmails()                   // Get all emails
+result.GetPhones()                   // Get all phones
+result.GetUSEntities()               // Get US-specific entities
+result.GetUKEntities()               // Get UK-specific entities
+
+// Validation
+result.GetValidatedEntities()        // Only validated entities
+result.GetValidEntities()            // Only valid entities
+
+// Utilities
+result.IsEmpty()                     // Check if no entities found
+result.HasType(piiType)              // Check if type exists
+```
 
 ### Value Objects
 
-Each PII type has a corresponding value object with:
-- `GetValue()`: Returns the raw string value
-- `GetContexts()`: Returns surrounding text contexts
-- `GetCount()`: Returns occurrence count
-- Type-specific fields (e.g., country, card type)
+All PII values implement the `Pii` interface:
 
-## Examples
+```go
+type Pii interface {
+    String() string
+    GetValue() string
+    GetContexts() []string
+    GetCount() int
+}
+```
 
-The `examples/` directory contains:
-- `basic/`: Simple usage examples
-- `regex-with-llm-cross-val/`: Advanced validation examples
+**Country-specific fields:**
+- `Phone.Country`, `SSN.Country`, `ZipCode.Country`, etc.
+- `CreditCard.Type` (visa, mastercard, generic)
+- `IPAddress.Version` (ipv4, ipv6)
 
-## Development
+## 🏗️ Architecture
+
+```
+pii-extractor/
+├── interface.go              # Main API with re-exports
+├── pii/
+│   └── types.go             # PII value objects and result types
+├── extractors/
+│   ├── interface.go         # Core interfaces
+│   ├── registry.go          # Extractor registry
+│   ├── regex/              # Regex-based extraction
+│   │   ├── extractor.go    # Main regex extractor
+│   │   ├── extraction.go   # Extraction logic with deduplication
+│   │   └── patterns/       # Country-specific patterns
+│   ├── llm/                # LLM-based extraction
+│   └── hybrid/             # Validation and ensemble extractors
+└── examples/               # Usage examples
+```
+
+## 🔧 Development
+
+### Requirements
+- **Go**: 1.21.0 or later
+- **Dependencies**: [gollm](https://github.com/teilomillet/gollm) for LLM integration
 
 ### Commands
 
-- **Build**: `go build`
-- **Test**: `go test ./...`
-- **Format**: `go fmt ./...`
-- **Vet**: `go vet ./...`
-- **Tidy**: `go mod tidy`
+```bash
+# Build the library
+go build
 
-### Dependencies
+# Run all tests
+go test ./...
 
-- [gollm](https://github.com/teilomillet/gollm): LLM integration library
-- Go 1.23.0 or later
+# Run tests with coverage
+go test -cover ./...
 
-## License
+# Format code
+go fmt ./...
 
-[Add your license information here]
+# Check for issues
+go vet ./...
 
-## Contributing
+# Tidy dependencies
+go mod tidy
 
-[Add contribution guidelines here]
+# Run the basic example
+go run examples/basic/basic_usage.go
+```
+
+### Testing
+
+```bash
+# Test specific packages
+go test ./pii
+go test ./extractors/regex
+go test ./extractors/regex/patterns
+
+# Run benchmarks
+go test -bench=. ./...
+```
+
+## 🚀 Roadmap
+
+- [ ] **Phone number support** for more countries (UK, FR, ES, IT)
+- [ ] **Machine learning models** for better accuracy
+- [ ] **Custom patterns** API for domain-specific PII
+- [ ] **Async processing** for large documents
+- [ ] **Data masking** and redaction capabilities
+- [ ] **Performance optimizations** for high-throughput scenarios
+
+## 📝 Changelog
+
+### v0.0.1 (2024-01-XX)
+- ✅ Initial release with multi-country support
+- ✅ Smart deduplication and context merging
+- ✅ Improved regex patterns for reduced false positives
+- ✅ LLM validation with multiple providers
+- ✅ Type-safe API with comprehensive value objects

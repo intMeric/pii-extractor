@@ -9,8 +9,8 @@ import (
 )
 
 func main() {
-	// Create a new RegexExtractor instance
-	extractor := piiextractor.NewRegexExtractor()
+	// Create a new RegexExtractor instance using the modern API
+	extractor := piiextractor.NewDefaultRegexExtractor()
 
 	// Sample text containing various PII types
 	text := `

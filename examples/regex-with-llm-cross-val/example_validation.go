@@ -27,7 +27,7 @@ func main() {
 
 	// Example 1: Basic extraction without validation
 	fmt.Println("=== Basic Extraction (No Validation) ===")
-	basicExtractor := pii.NewRegexExtractor()
+	basicExtractor := pii.NewDefaultRegexExtractor()
 	basicResult, err := basicExtractor.Extract(text)
 	if err != nil {
 		log.Fatalf("Basic extraction failed: %v", err)
@@ -69,7 +69,7 @@ func runValidationExample(text string, provider pii.LLMProvider, model, apiKey s
 	}
 
 	// Create validated extractor
-	baseExtractor := pii.NewRegexExtractor()
+	baseExtractor := pii.NewDefaultRegexExtractor()
 	validatedExtractor, err := pii.NewValidatedExtractor(baseExtractor, config)
 	if err != nil {
 		log.Printf("Failed to create validated extractor: %v", err)
@@ -98,7 +98,7 @@ func runOllamaExample(text string) {
 		MaxRetries:    1,
 	}
 
-	baseExtractor := pii.NewRegexExtractor()
+	baseExtractor := pii.NewDefaultRegexExtractor()
 	validatedExtractor, err := pii.NewValidatedExtractor(baseExtractor, config)
 	if err != nil {
 		log.Printf("Failed to create Ollama extractor: %v", err)
@@ -129,7 +129,7 @@ func runCustomConfigExample(text string) {
 		},
 	}
 
-	baseExtractor := pii.NewRegexExtractor()
+	baseExtractor := pii.NewDefaultRegexExtractor()
 	validatedExtractor, err := pii.NewValidatedExtractor(baseExtractor, config)
 	if err != nil {
 		log.Printf("Failed to create custom extractor: %v", err)
@@ -219,7 +219,7 @@ func processEmailsWithValidation(text string) {
 		MinConfidence: 0.8,
 	}
 
-	baseExtractor := pii.NewRegexExtractor()
+	baseExtractor := pii.NewDefaultRegexExtractor()
 	validatedExtractor, err := pii.NewValidatedExtractor(baseExtractor, config)
 	if err != nil {
 		log.Printf("Failed to create extractor: %v", err)

@@ -53,7 +53,7 @@ The project follows a modular architecture with clear separation of concerns:
 
 ```
 pii-extractor/
-├── interface.go                     # Main API with re-exports  
+├── interface.go                     # Main API with re-exports
 ├── pii/
 │   └── types.go                    # PII value objects with deduplication logic
 ├── extractors/
@@ -91,14 +91,23 @@ The extractor supports country-specific formats with high accuracy:
 
 - **US**: Phone numbers (555) 123-4567, SSNs 123-45-6789, ZIP codes 10001, street addresses, P.O. boxes
 - **UK**: Postal codes SW1A 1AA, street addresses 221B Baker Street
-- **France**: Metropolitan/DOM-TOM postal codes 75001/97110, street addresses 123 rue de la Paix  
+- **France**: Metropolitan/DOM-TOM postal codes 75001/97110, street addresses 123 rue de la Paix
 - **Spain**: Mainland/island postal codes 28013/35001, street addresses 123 Calle Mayor
 - **Italy**: All postal codes 00186/20100, street addresses 123 Via del Corso
 
 ## Version History
 
+### v0.0.2 - Enhanced Accuracy Release
+
+- Released with tag `v0.0.2`
+- Advanced false positive filtering for phone numbers
+- Enhanced detection to prevent credit card/IBAN segments being classified as phones
+- Improved US phone pattern for better test coverage
+- Fixed all unit tests to pass consistently
+
 ### v0.0.1 - Initial Release
-- Released with tag `v0.0.1` 
+
+- Released with tag `v0.0.1`
 - Smart deduplication system implemented
 - False positive reduction in phone number detection
 - Multi-country support for 5 countries
@@ -108,15 +117,17 @@ The extractor supports country-specific formats with high accuracy:
 ## Installation
 
 Users can install the stable version:
+
 ```bash
-go get github.com/intMeric/pii-extractor@v0.0.1
+go get github.com/intMeric/pii-extractor
 ```
 
 ## Testing Strategy
 
 The library should be tested with:
+
 - Multi-country text samples
-- Edge cases for false positives  
+- Edge cases for false positives
 - Deduplication scenarios
 - Context extraction accuracy
 - LLM validation workflows

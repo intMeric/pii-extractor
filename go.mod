@@ -16,7 +16,6 @@ require (
 	github.com/go-playground/validator/v10 v10.27.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/invopop/jsonschema v0.13.0 // indirect
-	github.com/josharian/intern v1.0.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/pkoukk/tiktoken-go v0.1.7 // indirect

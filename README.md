@@ -11,6 +11,11 @@ A comprehensive Go-based library for extracting and identifying Personally Ident
 - **France**: Metropolitan and DOM-TOM postal codes (75001, 97110), street addresses
 - **Spain**: Mainland and island postal codes (28013, 35001), street addresses
 - **Italy**: All valid postal codes (00186, 20100), street addresses
+- **Germany**: Phone numbers (+49 30 12345678), postal codes (10115), street addresses (Münchner Straße 15)
+- **China**: Phone numbers (+86 138 0013 8000), postal codes (100000), street addresses (北京市朝阳区建国门外大街1号)
+- **India**: Phone numbers (+91 98765 43210), postal codes (110001), street addresses (123 MG Road)
+- **Arabic Countries**: Phone numbers (+966 50 123 4567), postal codes (12345), street addresses (شارع الملك فهد)
+- **Russia**: Phone numbers (+7 495 123-45-67), postal codes (101000), street addresses (ул. Тверская, д. 13)
 
 ### Comprehensive PII Detection
 
@@ -147,7 +152,7 @@ import (
 func main() {
     // Create extractor with specific countries
     config := &piiextractor.ExtractorConfig{
-        Countries: []string{"US", "UK", "France", "Spain", "Italy"},
+        Countries: []string{"US", "UK", "France", "Spain", "Italy", "Germany", "China", "India", "Arabic", "Russia"},
     }
     extractor := piiextractor.NewExtractor(config)
 
@@ -157,7 +162,14 @@ func main() {
     French Address: 123 rue de la Paix, 75001 Paris
     Spanish Address: 123 Calle Mayor, 28013 Madrid
     Italian Address: 123 Via del Corso, 00186 Roma
+    German Address: Münchner Straße 15, 80331 München
+    Chinese Address: 北京市朝阳区建国门外大街1号, 100000
+    Indian Address: 123 MG Road, Mumbai 400001
+    Arabic Address: شارع الملك فهد، الرياض 11564
+    Russian Address: ул. Тверская, д. 13, Москва 101000
     US Phone: (555) 123-4567
+    German Phone: +49 30 12345678
+    Chinese Phone: +86 138 0013 8000
     `
 
     result, err := extractor.Extract(text)
@@ -171,6 +183,11 @@ func main() {
     fmt.Printf("🇫🇷 France Entities: %d\n", len(result.GetFranceEntities()))
     fmt.Printf("🇪🇸 Spain Entities: %d\n", len(result.GetSpainEntities()))
     fmt.Printf("🇮🇹 Italy Entities: %d\n", len(result.GetItalyEntities()))
+    fmt.Printf("🇩🇪 Germany Entities: %d\n", len(result.GetGermanyEntities()))
+    fmt.Printf("🇨🇳 China Entities: %d\n", len(result.GetChinaEntities()))
+    fmt.Printf("🇮🇳 India Entities: %d\n", len(result.GetIndiaEntities()))
+    fmt.Printf("🇸🇦 Arabic Entities: %d\n", len(result.GetArabicEntities()))
+    fmt.Printf("🇷🇺 Russia Entities: %d\n", len(result.GetRussiaEntities()))
 }
 ```
 
@@ -270,6 +287,11 @@ result.GetEmails()                   // Get all emails
 result.GetPhones()                   // Get all phones
 result.GetUSEntities()               // Get US-specific entities
 result.GetUKEntities()               // Get UK-specific entities
+result.GetGermanyEntities()          // Get Germany-specific entities
+result.GetChinaEntities()            // Get China-specific entities
+result.GetIndiaEntities()            // Get India-specific entities
+result.GetArabicEntities()           // Get Arabic countries entities
+result.GetRussiaEntities()           // Get Russia-specific entities
 
 // Validation
 result.GetValidatedEntities()        // Only validated entities

@@ -16,7 +16,7 @@ This is a Go-based PII (Personally Identifiable Information) extractor library t
 
 ### Key Features (v0.0.1)
 
-- **Multi-country Support**: Extracts PII for US, UK, France, Spain, and Italy
+- **Multi-country Support**: Extracts PII for US, UK, France, Spain, Italy, Germany, China, India, Arabic countries, and Russia
 - **Smart Deduplication**: Automatically merges duplicate entities and consolidates contexts
 - **High Accuracy**: Improved regex patterns to minimize false positives
 - **Context Extraction**: Captures surrounding sentences or 8 words before/after for context
@@ -68,7 +68,12 @@ pii-extractor/
 │   │       ├── uk.go              # UK postal codes and addresses
 │   │       ├── fr.go              # France postal codes and addresses
 │   │       ├── es.go              # Spain postal codes and addresses
-│   │       └── it.go              # Italy postal codes and addresses
+│   │       ├── it.go              # Italy postal codes and addresses
+│   │       ├── de.go              # Germany postal codes, phones and addresses
+│   │       ├── cn.go              # China postal codes, phones and addresses
+│   │       ├── in.go              # India postal codes, phones and addresses
+│   │       ├── ar.go              # Arabic countries postal codes, phones and addresses
+│   │       └── ru.go              # Russia postal codes, phones and addresses
 │   ├── llm/                       # LLM-based extraction
 │   └── hybrid/                    # Validation and ensemble extractors
 ├── examples/
@@ -94,6 +99,11 @@ The extractor supports country-specific formats with high accuracy:
 - **France**: Metropolitan/DOM-TOM postal codes 75001/97110, street addresses 123 rue de la Paix
 - **Spain**: Mainland/island postal codes 28013/35001, street addresses 123 Calle Mayor
 - **Italy**: All postal codes 00186/20100, street addresses 123 Via del Corso
+- **Germany**: Phone numbers +49 30 12345678, postal codes 10115, street addresses Münchner Straße 15
+- **China**: Phone numbers +86 138 0013 8000, postal codes 100000, street addresses 北京市朝阳区建国门外大街1号
+- **India**: Phone numbers +91 98765 43210, postal codes 110001, street addresses 123 MG Road
+- **Arabic Countries**: Phone numbers +966 50 123 4567, postal codes 12345, street addresses شارع الملك فهد
+- **Russia**: Phone numbers +7 495 123-45-67, postal codes 101000, street addresses ул. Тверская, д. 13
 
 ## Version History
 

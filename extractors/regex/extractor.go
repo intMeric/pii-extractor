@@ -90,6 +90,41 @@ func (r *RegexExtractor) Extract(text string) (*pii.PiiExtractionResult, error) 
 			allEntities = append(allEntities, ExtractPostalCodesItaly(text)...)
 			allEntities = append(allEntities, ExtractStreetAddressesItaly(text)...)
 		}
+
+		// Germany-specific extractions
+		if r.shouldExtractForCountry("Germany") {
+			allEntities = append(allEntities, ExtractPostalCodesGermany(text)...)
+			allEntities = append(allEntities, ExtractPhonesGermany(text)...)
+			allEntities = append(allEntities, ExtractStreetAddressesGermany(text)...)
+		}
+
+		// China-specific extractions
+		if r.shouldExtractForCountry("China") {
+			allEntities = append(allEntities, ExtractPostalCodesChina(text)...)
+			allEntities = append(allEntities, ExtractPhonesChina(text)...)
+			allEntities = append(allEntities, ExtractStreetAddressesChina(text)...)
+		}
+
+		// India-specific extractions
+		if r.shouldExtractForCountry("India") {
+			allEntities = append(allEntities, ExtractPostalCodesIndia(text)...)
+			allEntities = append(allEntities, ExtractPhonesIndia(text)...)
+			allEntities = append(allEntities, ExtractStreetAddressesIndia(text)...)
+		}
+
+		// Arabic countries-specific extractions
+		if r.shouldExtractForCountry("Arabic") {
+			allEntities = append(allEntities, ExtractPostalCodesArabic(text)...)
+			allEntities = append(allEntities, ExtractPhonesArabic(text)...)
+			allEntities = append(allEntities, ExtractStreetAddressesArabic(text)...)
+		}
+
+		// Russia-specific extractions
+		if r.shouldExtractForCountry("Russia") {
+			allEntities = append(allEntities, ExtractPostalCodesRussia(text)...)
+			allEntities = append(allEntities, ExtractPhonesRussia(text)...)
+			allEntities = append(allEntities, ExtractStreetAddressesRussia(text)...)
+		}
 	}
 
 	return pii.NewPiiExtractionResult(allEntities), nil
@@ -109,9 +144,26 @@ func (r *RegexExtractor) ExtractByType(text string, piiType pii.PiiType) ([]pii.
 	case pii.PiiTypeIBAN:
 		return ExtractIBANs(text), nil
 	case pii.PiiTypePhone:
+		var entities []pii.PiiEntity
 		if r.shouldExtractForCountry("US") {
-			return ExtractPhonesUS(text), nil
+			entities = append(entities, ExtractPhonesUS(text)...)
 		}
+		if r.shouldExtractForCountry("Germany") {
+			entities = append(entities, ExtractPhonesGermany(text)...)
+		}
+		if r.shouldExtractForCountry("China") {
+			entities = append(entities, ExtractPhonesChina(text)...)
+		}
+		if r.shouldExtractForCountry("India") {
+			entities = append(entities, ExtractPhonesIndia(text)...)
+		}
+		if r.shouldExtractForCountry("Arabic") {
+			entities = append(entities, ExtractPhonesArabic(text)...)
+		}
+		if r.shouldExtractForCountry("Russia") {
+			entities = append(entities, ExtractPhonesRussia(text)...)
+		}
+		return entities, nil
 	case pii.PiiTypeSSN:
 		if r.shouldExtractForCountry("US") {
 			return ExtractSSNsUS(text), nil
@@ -133,6 +185,21 @@ func (r *RegexExtractor) ExtractByType(text string, piiType pii.PiiType) ([]pii.
 		if r.shouldExtractForCountry("Italy") {
 			entities = append(entities, ExtractPostalCodesItaly(text)...)
 		}
+		if r.shouldExtractForCountry("Germany") {
+			entities = append(entities, ExtractPostalCodesGermany(text)...)
+		}
+		if r.shouldExtractForCountry("China") {
+			entities = append(entities, ExtractPostalCodesChina(text)...)
+		}
+		if r.shouldExtractForCountry("India") {
+			entities = append(entities, ExtractPostalCodesIndia(text)...)
+		}
+		if r.shouldExtractForCountry("Arabic") {
+			entities = append(entities, ExtractPostalCodesArabic(text)...)
+		}
+		if r.shouldExtractForCountry("Russia") {
+			entities = append(entities, ExtractPostalCodesRussia(text)...)
+		}
 		return entities, nil
 	case pii.PiiTypeStreetAddress:
 		var entities []pii.PiiEntity
@@ -150,6 +217,21 @@ func (r *RegexExtractor) ExtractByType(text string, piiType pii.PiiType) ([]pii.
 		}
 		if r.shouldExtractForCountry("Italy") {
 			entities = append(entities, ExtractStreetAddressesItaly(text)...)
+		}
+		if r.shouldExtractForCountry("Germany") {
+			entities = append(entities, ExtractStreetAddressesGermany(text)...)
+		}
+		if r.shouldExtractForCountry("China") {
+			entities = append(entities, ExtractStreetAddressesChina(text)...)
+		}
+		if r.shouldExtractForCountry("India") {
+			entities = append(entities, ExtractStreetAddressesIndia(text)...)
+		}
+		if r.shouldExtractForCountry("Arabic") {
+			entities = append(entities, ExtractStreetAddressesArabic(text)...)
+		}
+		if r.shouldExtractForCountry("Russia") {
+			entities = append(entities, ExtractStreetAddressesRussia(text)...)
 		}
 		return entities, nil
 	case pii.PiiTypePoBox:

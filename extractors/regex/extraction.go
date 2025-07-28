@@ -686,3 +686,437 @@ func ExtractStreetAddressesItaly(text string) []pii.PiiEntity {
 	}
 	return entities
 }
+
+// =============================================================================
+// NEW COUNTRIES EXTRACTION FUNCTIONS
+// =============================================================================
+
+// --- Germany PII ---
+
+// ExtractPostalCodesGermany extracts Germany postal codes as PiiEntity objects with context
+func ExtractPostalCodesGermany(text string) []pii.PiiEntity {
+	postalCodes := extractWithContext(text, patterns.PostalCodeGermanyRegex,
+		func(value, context string) pii.ZipCode {
+			return pii.ZipCode{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Germany",
+			}
+		},
+		func(zipCode *pii.ZipCode, context string) {
+			zipCode.BasePii.IncrementCount()
+			zipCode.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, zipCode := range postalCodes {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypeZipCode,
+			Value: zipCode,
+		})
+	}
+	return entities
+}
+
+// ExtractPhonesGermany extracts Germany phone numbers as PiiEntity objects with context
+func ExtractPhonesGermany(text string) []pii.PiiEntity {
+	phones := extractWithContext(text, patterns.PhoneGermanyRegex,
+		func(value, context string) pii.Phone {
+			return pii.Phone{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Germany",
+			}
+		},
+		func(phone *pii.Phone, context string) {
+			phone.BasePii.IncrementCount()
+			phone.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, phone := range phones {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypePhone,
+			Value: phone,
+		})
+	}
+	return entities
+}
+
+// ExtractStreetAddressesGermany extracts Germany street addresses as PiiEntity objects with context
+func ExtractStreetAddressesGermany(text string) []pii.PiiEntity {
+	addresses := extractWithContext(text, patterns.StreetAddressGermanyRegex,
+		func(value, context string) pii.StreetAddress {
+			return pii.StreetAddress{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Germany",
+			}
+		},
+		func(address *pii.StreetAddress, context string) {
+			address.BasePii.IncrementCount()
+			address.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, address := range addresses {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypeStreetAddress,
+			Value: address,
+		})
+	}
+	return entities
+}
+
+// --- China PII ---
+
+// ExtractPostalCodesChina extracts China postal codes as PiiEntity objects with context
+func ExtractPostalCodesChina(text string) []pii.PiiEntity {
+	postalCodes := extractWithContext(text, patterns.PostalCodeChinaRegex,
+		func(value, context string) pii.ZipCode {
+			return pii.ZipCode{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "China",
+			}
+		},
+		func(zipCode *pii.ZipCode, context string) {
+			zipCode.BasePii.IncrementCount()
+			zipCode.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, zipCode := range postalCodes {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypeZipCode,
+			Value: zipCode,
+		})
+	}
+	return entities
+}
+
+// ExtractPhonesChina extracts China phone numbers as PiiEntity objects with context
+func ExtractPhonesChina(text string) []pii.PiiEntity {
+	phones := extractWithContext(text, patterns.PhoneChinaRegex,
+		func(value, context string) pii.Phone {
+			return pii.Phone{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "China",
+			}
+		},
+		func(phone *pii.Phone, context string) {
+			phone.BasePii.IncrementCount()
+			phone.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, phone := range phones {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypePhone,
+			Value: phone,
+		})
+	}
+	return entities
+}
+
+// ExtractStreetAddressesChina extracts China street addresses as PiiEntity objects with context
+func ExtractStreetAddressesChina(text string) []pii.PiiEntity {
+	addresses := extractWithContext(text, patterns.StreetAddressChinaRegex,
+		func(value, context string) pii.StreetAddress {
+			return pii.StreetAddress{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "China",
+			}
+		},
+		func(address *pii.StreetAddress, context string) {
+			address.BasePii.IncrementCount()
+			address.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, address := range addresses {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypeStreetAddress,
+			Value: address,
+		})
+	}
+	return entities
+}
+
+// --- India PII ---
+
+// ExtractPostalCodesIndia extracts India postal codes as PiiEntity objects with context
+func ExtractPostalCodesIndia(text string) []pii.PiiEntity {
+	postalCodes := extractWithContext(text, patterns.PostalCodeIndiaRegex,
+		func(value, context string) pii.ZipCode {
+			return pii.ZipCode{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "India",
+			}
+		},
+		func(zipCode *pii.ZipCode, context string) {
+			zipCode.BasePii.IncrementCount()
+			zipCode.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, zipCode := range postalCodes {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypeZipCode,
+			Value: zipCode,
+		})
+	}
+	return entities
+}
+
+// ExtractPhonesIndia extracts India phone numbers as PiiEntity objects with context
+func ExtractPhonesIndia(text string) []pii.PiiEntity {
+	phones := extractWithContext(text, patterns.PhoneIndiaRegex,
+		func(value, context string) pii.Phone {
+			return pii.Phone{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "India",
+			}
+		},
+		func(phone *pii.Phone, context string) {
+			phone.BasePii.IncrementCount()
+			phone.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, phone := range phones {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypePhone,
+			Value: phone,
+		})
+	}
+	return entities
+}
+
+// ExtractStreetAddressesIndia extracts India street addresses as PiiEntity objects with context
+func ExtractStreetAddressesIndia(text string) []pii.PiiEntity {
+	addresses := extractWithContext(text, patterns.StreetAddressIndiaRegex,
+		func(value, context string) pii.StreetAddress {
+			return pii.StreetAddress{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "India",
+			}
+		},
+		func(address *pii.StreetAddress, context string) {
+			address.BasePii.IncrementCount()
+			address.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, address := range addresses {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypeStreetAddress,
+			Value: address,
+		})
+	}
+	return entities
+}
+
+// --- Arabic Countries PII ---
+
+// ExtractPostalCodesArabic extracts Arabic countries postal codes as PiiEntity objects with context
+func ExtractPostalCodesArabic(text string) []pii.PiiEntity {
+	postalCodes := extractWithContext(text, patterns.PostalCodeArabicRegex,
+		func(value, context string) pii.ZipCode {
+			return pii.ZipCode{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Arabic",
+			}
+		},
+		func(zipCode *pii.ZipCode, context string) {
+			zipCode.BasePii.IncrementCount()
+			zipCode.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, zipCode := range postalCodes {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypeZipCode,
+			Value: zipCode,
+		})
+	}
+	return entities
+}
+
+// ExtractPhonesArabic extracts Arabic countries phone numbers as PiiEntity objects with context
+func ExtractPhonesArabic(text string) []pii.PiiEntity {
+	phones := extractWithContext(text, patterns.PhoneArabicRegex,
+		func(value, context string) pii.Phone {
+			return pii.Phone{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Arabic",
+			}
+		},
+		func(phone *pii.Phone, context string) {
+			phone.BasePii.IncrementCount()
+			phone.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, phone := range phones {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypePhone,
+			Value: phone,
+		})
+	}
+	return entities
+}
+
+// ExtractStreetAddressesArabic extracts Arabic countries street addresses as PiiEntity objects with context
+func ExtractStreetAddressesArabic(text string) []pii.PiiEntity {
+	addresses := extractWithContext(text, patterns.StreetAddressArabicRegex,
+		func(value, context string) pii.StreetAddress {
+			return pii.StreetAddress{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Arabic",
+			}
+		},
+		func(address *pii.StreetAddress, context string) {
+			address.BasePii.IncrementCount()
+			address.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, address := range addresses {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypeStreetAddress,
+			Value: address,
+		})
+	}
+	return entities
+}
+
+// --- Russia PII ---
+
+// ExtractPostalCodesRussia extracts Russia postal codes as PiiEntity objects with context
+func ExtractPostalCodesRussia(text string) []pii.PiiEntity {
+	postalCodes := extractWithContext(text, patterns.PostalCodeRussiaRegex,
+		func(value, context string) pii.ZipCode {
+			return pii.ZipCode{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Russia",
+			}
+		},
+		func(zipCode *pii.ZipCode, context string) {
+			zipCode.BasePii.IncrementCount()
+			zipCode.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, zipCode := range postalCodes {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypeZipCode,
+			Value: zipCode,
+		})
+	}
+	return entities
+}
+
+// ExtractPhonesRussia extracts Russia phone numbers as PiiEntity objects with context
+func ExtractPhonesRussia(text string) []pii.PiiEntity {
+	phones := extractWithContext(text, patterns.PhoneRussiaRegex,
+		func(value, context string) pii.Phone {
+			return pii.Phone{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Russia",
+			}
+		},
+		func(phone *pii.Phone, context string) {
+			phone.BasePii.IncrementCount()
+			phone.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, phone := range phones {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypePhone,
+			Value: phone,
+		})
+	}
+	return entities
+}
+
+// ExtractStreetAddressesRussia extracts Russia street addresses as PiiEntity objects with context
+func ExtractStreetAddressesRussia(text string) []pii.PiiEntity {
+	addresses := extractWithContext(text, patterns.StreetAddressRussiaRegex,
+		func(value, context string) pii.StreetAddress {
+			return pii.StreetAddress{
+				BasePii: pii.BasePii{
+					Value:    value,
+					Contexts: []string{context},
+					Count:    1,
+				},
+				Country: "Russia",
+			}
+		},
+		func(address *pii.StreetAddress, context string) {
+			address.BasePii.IncrementCount()
+			address.BasePii.AddContext(context)
+		})
+
+	var entities []pii.PiiEntity
+	for _, address := range addresses {
+		entities = append(entities, pii.PiiEntity{
+			Type:  pii.PiiTypeStreetAddress,
+			Value: address,
+		})
+	}
+	return entities
+}

@@ -14,7 +14,7 @@ When architecture change (create/delete file etc...) update CLAUDE.md
 
 This is a Go-based PII (Personally Identifiable Information) extractor library that provides high-accuracy detection and extraction of sensitive data from text across multiple countries. The project features intelligent deduplication, context extraction, and optional LLM validation.
 
-### Key Features (v0.0.1)
+### Key Features (v0.0.3)
 
 - **Multi-country Support**: Extracts PII for US, UK, France, Spain, Italy, Germany, China, India, Arabic countries, and Russia
 - **Smart Deduplication**: Automatically merges duplicate entities and consolidates contexts
@@ -106,6 +106,16 @@ The extractor supports country-specific formats with high accuracy:
 - **Russia**: Phone numbers +7 495 123-45-67, postal codes 101000, street addresses ул. Тверская, д. 13
 
 ## Version History
+
+### v0.0.3 - Multi-Language Expansion Release
+
+- Released with tag `v0.0.3`
+- Added support for 5 new countries/languages: Germany, China, India, Arabic countries, Russia
+- Full Unicode support for international characters (German umlauts, Chinese characters, Arabic script, Cyrillic)
+- Extended phone number detection for 6 countries total
+- Comprehensive test suites for all new languages with real-world examples
+- Backward-compatible API with new country-specific filtering methods
+- Enhanced documentation with international examples
 
 ### v0.0.2 - Enhanced Accuracy Release
 

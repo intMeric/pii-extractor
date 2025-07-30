@@ -1,7 +1,9 @@
 package regex
 
 import (
+	"runtime"
 	"slices"
+	"sync"
 	
 	"github.com/intMeric/pii-extractor/extractors"
 	"github.com/intMeric/pii-extractor/pii"
@@ -39,7 +41,13 @@ func NewDefaultExtractor() *RegexExtractor {
 
 // Extract performs PII extraction on the given text
 func (r *RegexExtractor) Extract(text string) (*pii.PiiExtractionResult, error) {
-	var allEntities []pii.PiiEntity
+	// Pre-allocate slice with estimated capacity based on text length
+	// Rough estimation: 1 PII entity per 200 characters
+	estimatedCapacity := len(text)/200 + 10
+	if estimatedCapacity > 1000 {
+		estimatedCapacity = 1000 // Cap at reasonable maximum
+	}
+	allEntities := make([]pii.PiiEntity, 0, estimatedCapacity)
 
 	// If specific types are configured, extract only those
 	if len(r.types) > 0 {
@@ -51,79 +59,108 @@ func (r *RegexExtractor) Extract(text string) (*pii.PiiExtractionResult, error) 
 			allEntities = append(allEntities, entities...)
 		}
 	} else {
-		// Extract all types
-		allEntities = append(allEntities, ExtractEmails(text)...)
-		allEntities = append(allEntities, ExtractCreditCards(text)...)
-		allEntities = append(allEntities, ExtractIPAddresses(text)...)
-		allEntities = append(allEntities, ExtractBtcAddresses(text)...)
-		allEntities = append(allEntities, ExtractIBANs(text)...)
+		// Collect all extraction operations and batch them
+		var extractorFuncs []func(string) []pii.PiiEntity
+		
+		// Generic/International extractors
+		extractorFuncs = append(extractorFuncs,
+			ExtractEmails,
+			ExtractCreditCards,
+			ExtractIPAddresses,
+			ExtractBtcAddresses,
+			ExtractIBANs,
+		)
 
-		// US-specific extractions
+		// Country-specific extractors
 		if r.shouldExtractForCountry("US") {
-			allEntities = append(allEntities, ExtractPhonesUS(text)...)
-			allEntities = append(allEntities, ExtractSSNsUS(text)...)
-			allEntities = append(allEntities, ExtractZipCodesUS(text)...)
-			allEntities = append(allEntities, ExtractStreetAddressesUS(text)...)
-			allEntities = append(allEntities, ExtractPoBoxesUS(text)...)
+			extractorFuncs = append(extractorFuncs,
+				ExtractPhonesUS,
+				ExtractSSNsUS,
+				ExtractZipCodesUS,
+				ExtractStreetAddressesUS,
+				ExtractPoBoxesUS,
+			)
 		}
 
-		// UK-specific extractions
 		if r.shouldExtractForCountry("UK") {
-			allEntities = append(allEntities, ExtractPostalCodesUK(text)...)
-			allEntities = append(allEntities, ExtractStreetAddressesUK(text)...)
+			extractorFuncs = append(extractorFuncs,
+				ExtractPostalCodesUK,
+				ExtractStreetAddressesUK,
+			)
 		}
 
-		// France-specific extractions
 		if r.shouldExtractForCountry("France") {
-			allEntities = append(allEntities, ExtractPostalCodesFrance(text)...)
-			allEntities = append(allEntities, ExtractStreetAddressesFrance(text)...)
+			extractorFuncs = append(extractorFuncs,
+				ExtractPostalCodesFrance,
+				ExtractStreetAddressesFrance,
+			)
 		}
 
-		// Spain-specific extractions
 		if r.shouldExtractForCountry("Spain") {
-			allEntities = append(allEntities, ExtractPostalCodesSpain(text)...)
-			allEntities = append(allEntities, ExtractStreetAddressesSpain(text)...)
+			extractorFuncs = append(extractorFuncs,
+				ExtractPostalCodesSpain,
+				ExtractStreetAddressesSpain,
+			)
 		}
 
-		// Italy-specific extractions
 		if r.shouldExtractForCountry("Italy") {
-			allEntities = append(allEntities, ExtractPostalCodesItaly(text)...)
-			allEntities = append(allEntities, ExtractStreetAddressesItaly(text)...)
+			extractorFuncs = append(extractorFuncs,
+				ExtractPostalCodesItaly,
+				ExtractStreetAddressesItaly,
+			)
 		}
 
-		// Germany-specific extractions
 		if r.shouldExtractForCountry("Germany") {
-			allEntities = append(allEntities, ExtractPostalCodesGermany(text)...)
-			allEntities = append(allEntities, ExtractPhonesGermany(text)...)
-			allEntities = append(allEntities, ExtractStreetAddressesGermany(text)...)
+			extractorFuncs = append(extractorFuncs,
+				ExtractPostalCodesGermany,
+				ExtractPhonesGermany,
+				ExtractStreetAddressesGermany,
+			)
 		}
 
-		// China-specific extractions
 		if r.shouldExtractForCountry("China") {
-			allEntities = append(allEntities, ExtractPostalCodesChina(text)...)
-			allEntities = append(allEntities, ExtractPhonesChina(text)...)
-			allEntities = append(allEntities, ExtractStreetAddressesChina(text)...)
+			extractorFuncs = append(extractorFuncs,
+				ExtractPostalCodesChina,
+				ExtractPhonesChina,
+				ExtractStreetAddressesChina,
+			)
 		}
 
-		// India-specific extractions
 		if r.shouldExtractForCountry("India") {
-			allEntities = append(allEntities, ExtractPostalCodesIndia(text)...)
-			allEntities = append(allEntities, ExtractPhonesIndia(text)...)
-			allEntities = append(allEntities, ExtractStreetAddressesIndia(text)...)
+			extractorFuncs = append(extractorFuncs,
+				ExtractPostalCodesIndia,
+				ExtractPhonesIndia,
+				ExtractStreetAddressesIndia,
+			)
 		}
 
-		// Arabic countries-specific extractions
 		if r.shouldExtractForCountry("Arabic") {
-			allEntities = append(allEntities, ExtractPostalCodesArabic(text)...)
-			allEntities = append(allEntities, ExtractPhonesArabic(text)...)
-			allEntities = append(allEntities, ExtractStreetAddressesArabic(text)...)
+			extractorFuncs = append(extractorFuncs,
+				ExtractPostalCodesArabic,
+				ExtractPhonesArabic,
+				ExtractStreetAddressesArabic,
+			)
 		}
 
-		// Russia-specific extractions
 		if r.shouldExtractForCountry("Russia") {
-			allEntities = append(allEntities, ExtractPostalCodesRussia(text)...)
-			allEntities = append(allEntities, ExtractPhonesRussia(text)...)
-			allEntities = append(allEntities, ExtractStreetAddressesRussia(text)...)
+			extractorFuncs = append(extractorFuncs,
+				ExtractPostalCodesRussia,
+				ExtractPhonesRussia,
+				ExtractStreetAddressesRussia,
+			)
+		}
+
+		// Use parallel execution for large text or many extractors
+		if len(text) > 10000 && len(extractorFuncs) > 8 {
+			allEntities = r.executeExtractorsParallel(text, extractorFuncs, allEntities)
+		} else {
+			// Sequential execution for smaller workloads
+			for _, extractorFunc := range extractorFuncs {
+				entities := extractorFunc(text)
+				if len(entities) > 0 {
+					allEntities = append(allEntities, entities...)
+				}
+			}
 		}
 	}
 
@@ -144,7 +181,7 @@ func (r *RegexExtractor) ExtractByType(text string, piiType pii.PiiType) ([]pii.
 	case pii.PiiTypeIBAN:
 		return ExtractIBANs(text), nil
 	case pii.PiiTypePhone:
-		var entities []pii.PiiEntity
+		entities := make([]pii.PiiEntity, 0, 20) // Pre-allocate for typical phone count
 		if r.shouldExtractForCountry("US") {
 			entities = append(entities, ExtractPhonesUS(text)...)
 		}
@@ -169,7 +206,7 @@ func (r *RegexExtractor) ExtractByType(text string, piiType pii.PiiType) ([]pii.
 			return ExtractSSNsUS(text), nil
 		}
 	case pii.PiiTypeZipCode:
-		var entities []pii.PiiEntity
+		entities := make([]pii.PiiEntity, 0, 30) // Pre-allocate for typical postal code count
 		if r.shouldExtractForCountry("US") {
 			entities = append(entities, ExtractZipCodesUS(text)...)
 		}
@@ -202,7 +239,7 @@ func (r *RegexExtractor) ExtractByType(text string, piiType pii.PiiType) ([]pii.
 		}
 		return entities, nil
 	case pii.PiiTypeStreetAddress:
-		var entities []pii.PiiEntity
+		entities := make([]pii.PiiEntity, 0, 25) // Pre-allocate for typical address count
 		if r.shouldExtractForCountry("US") {
 			entities = append(entities, ExtractStreetAddressesUS(text)...)
 		}
@@ -288,4 +325,53 @@ func (r *RegexExtractor) GetCountries() []string {
 // GetTypes returns the list of PII types this extractor is configured for
 func (r *RegexExtractor) GetTypes() []pii.PiiType {
 	return r.types
+}
+
+// executeExtractorsParallel runs extraction functions in parallel using worker pool
+func (r *RegexExtractor) executeExtractorsParallel(text string, extractorFuncs []func(string) []pii.PiiEntity, initialEntities []pii.PiiEntity) []pii.PiiEntity {
+	numWorkers := runtime.NumCPU()
+	if numWorkers > len(extractorFuncs) {
+		numWorkers = len(extractorFuncs)
+	}
+	
+	// Create channels for work distribution
+	jobs := make(chan func(string) []pii.PiiEntity, len(extractorFuncs))
+	results := make(chan []pii.PiiEntity, len(extractorFuncs))
+	
+	// Start worker goroutines
+	var wg sync.WaitGroup
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for extractorFunc := range jobs {
+				entities := extractorFunc(text)
+				results <- entities
+			}
+		}()
+	}
+	
+	// Send jobs to workers
+	go func() {
+		for _, extractorFunc := range extractorFuncs {
+			jobs <- extractorFunc
+		}
+		close(jobs)
+	}()
+	
+	// Wait for workers to complete
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+	
+	// Collect all results
+	allEntities := initialEntities
+	for entities := range results {
+		if len(entities) > 0 {
+			allEntities = append(allEntities, entities...)
+		}
+	}
+	
+	return allEntities
 }

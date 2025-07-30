@@ -9,12 +9,30 @@ import (
 // extractWithContext is a generic function for extracting PII with context and counting
 func extractWithContext[T any](text string, regexPattern *regexp.Regexp, createItem func(value string, context string) T, updateItem func(item *T, context string)) []T {
 	indices := patterns.MatchWithIndices(text, regexPattern)
-	itemMap := make(map[string]*T)
+	if len(indices) == 0 {
+		return []T{}
+	}
+	
+	// Pre-size map based on expected unique matches (typically 70-80% of total matches are unique)
+	expectedUnique := len(indices)*4/5 + 1
+	itemMap := make(map[string]*T, expectedUnique)
+
+	// Use context cache only if we have many matches (>= 10) to amortize the cost
+	var contextCache *patterns.ContextCache
+	if len(indices) >= 10 {
+		contextCache = patterns.NewContextCache(text)
+	}
 
 	for _, idx := range indices {
 		start, end := idx[0], idx[1]
 		value := text[start:end]
-		context := patterns.ExtractContext(text, start, end)
+		
+		var context string
+		if contextCache != nil {
+			context = contextCache.ExtractContext(start, end)
+		} else {
+			context = patterns.ExtractContext(text, start, end)
+		}
 
 		if item, exists := itemMap[value]; exists {
 			updateItem(item, context)
@@ -24,6 +42,7 @@ func extractWithContext[T any](text string, regexPattern *regexp.Regexp, createI
 		}
 	}
 
+	// Pre-allocate result slice with exact size
 	items := make([]T, 0, len(itemMap))
 	for _, item := range itemMap {
 		items = append(items, *item)
@@ -68,34 +87,43 @@ func ExtractPhonesUS(text string) []pii.PiiEntity {
 
 // isCreditCardFalsePositive checks if a phone number is actually part of a credit card or other PII
 func isCreditCardFalsePositive(value string) bool {
-	// Remove all non-digits
-	digits := ""
-	for _, r := range value {
-		if r >= '0' && r <= '9' {
-			digits += string(r)
+	// Count digits and extract them without creating strings
+	var digitChars [20]byte // Pre-allocated buffer for digits (max 20 digits)
+	digitCount := 0
+	
+	for i := 0; i < len(value) && digitCount < 20; i++ {
+		c := value[i]
+		if c >= '0' && c <= '9' {
+			digitChars[digitCount] = c
+			digitCount++
 		}
 	}
 	
-	// If it's 16 digits or more, it's likely a credit card or IBAN
-	if len(digits) >= 14 {
+	// If it's 14+ digits, it's likely a credit card or IBAN
+	if digitCount >= 14 {
 		return true
 	}
 	
 	// Check if it looks like part of a credit card (starts with common prefixes)
-	if len(digits) >= 4 {
-		prefix := digits[:4]
-		// Common credit card prefixes
-		if prefix == "4111" || prefix == "4000" || prefix == "5555" || prefix == "5105" ||
-		   prefix == "1111" || prefix == "1234" {
+	if digitCount >= 4 {
+		// Check common credit card prefixes without string allocation
+		prefix := digitChars[:4]
+		if (prefix[0] == '4' && prefix[1] == '1' && prefix[2] == '1' && prefix[3] == '1') ||
+		   (prefix[0] == '4' && prefix[1] == '0' && prefix[2] == '0' && prefix[3] == '0') ||
+		   (prefix[0] == '5' && prefix[1] == '5' && prefix[2] == '5' && prefix[3] == '5') ||
+		   (prefix[0] == '5' && prefix[1] == '1' && prefix[2] == '0' && prefix[3] == '5') ||
+		   (prefix[0] == '1' && prefix[1] == '1' && prefix[2] == '1' && prefix[3] == '1') ||
+		   (prefix[0] == '1' && prefix[1] == '2' && prefix[2] == '3' && prefix[3] == '4') {
 			return true
 		}
 	}
 	
 	// Check if it's all the same digits (likely test data)
-	if len(digits) >= 4 {
+	if digitCount >= 4 {
+		firstDigit := digitChars[0]
 		allSame := true
-		for i := 1; i < len(digits); i++ {
-			if digits[i] != digits[0] {
+		for i := 1; i < digitCount; i++ {
+			if digitChars[i] != firstDigit {
 				allSame = false
 				break
 			}
@@ -106,8 +134,32 @@ func isCreditCardFalsePositive(value string) bool {
 	}
 	
 	// Filter out sequences like 1111-1111 which are parts of credit cards
-	if len(digits) == 8 && (digits == "11111111" || digits[:4] == digits[4:]) {
-		return true
+	if digitCount == 8 {
+		// Check if all digits are the same
+		if digitChars[0] == '1' {
+			allOnes := true
+			for i := 1; i < 8; i++ {
+				if digitChars[i] != '1' {
+					allOnes = false
+					break
+				}
+			}
+			if allOnes {
+				return true
+			}
+		}
+		
+		// Check if first 4 digits match last 4 digits
+		firstHalfSame := true
+		for i := 0; i < 4; i++ {
+			if digitChars[i] != digitChars[i+4] {
+				firstHalfSame = false
+				break
+			}
+		}
+		if firstHalfSame {
+			return true
+		}
 	}
 	
 	return false
@@ -258,14 +310,32 @@ func ExtractEmails(text string) []pii.PiiEntity {
 
 // ExtractCreditCards extracts credit cards as PiiEntity objects with context
 func ExtractCreditCards(text string) []pii.PiiEntity {
-	cardMap := make(map[string]*pii.CreditCard)
+	// Estimate capacity based on typical credit card density in text
+	estimatedCards := len(text)/2000 + 5 // ~1 card per 2000 chars
+	cardMap := make(map[string]*pii.CreditCard, estimatedCards)
 
 	// Check for VISA cards
 	visaIndices := patterns.MatchWithIndices(text, patterns.VISACreditCardRegex)
+	
+	// Create context cache only if we have enough total matches to justify it
+	var contextCache *patterns.ContextCache
+	mcIndices := patterns.MatchWithIndices(text, patterns.MCCreditCardRegex)
+	genericIndices := patterns.MatchWithIndices(text, patterns.CreditCardRegex)
+	totalMatches := len(visaIndices) + len(mcIndices) + len(genericIndices)
+	
+	if totalMatches >= 5 {
+		contextCache = patterns.NewContextCache(text)
+	}
+
 	for _, idx := range visaIndices {
 		start, end := idx[0], idx[1]
 		value := text[start:end]
-		context := patterns.ExtractContext(text, start, end)
+		var context string
+		if contextCache != nil {
+			context = contextCache.ExtractContext(start, end)
+		} else {
+			context = patterns.ExtractContext(text, start, end)
+		}
 
 		if card, exists := cardMap[value]; exists {
 			card.BasePii.IncrementCount()
@@ -283,11 +353,15 @@ func ExtractCreditCards(text string) []pii.PiiEntity {
 	}
 
 	// Check for MasterCard
-	mcIndices := patterns.MatchWithIndices(text, patterns.MCCreditCardRegex)
 	for _, idx := range mcIndices {
 		start, end := idx[0], idx[1]
 		value := text[start:end]
-		context := patterns.ExtractContext(text, start, end)
+		var context string
+		if contextCache != nil {
+			context = contextCache.ExtractContext(start, end)
+		} else {
+			context = patterns.ExtractContext(text, start, end)
+		}
 
 		if card, exists := cardMap[value]; exists {
 			card.BasePii.IncrementCount()
@@ -305,11 +379,15 @@ func ExtractCreditCards(text string) []pii.PiiEntity {
 	}
 
 	// Check for generic cards (not already found as VISA/MC)
-	genericIndices := patterns.MatchWithIndices(text, patterns.CreditCardRegex)
 	for _, idx := range genericIndices {
 		start, end := idx[0], idx[1]
 		value := text[start:end]
-		context := patterns.ExtractContext(text, start, end)
+		var context string
+		if contextCache != nil {
+			context = contextCache.ExtractContext(start, end)
+		} else {
+			context = patterns.ExtractContext(text, start, end)
+		}
 
 		// Skip if already found as VISA or MC
 		if _, exists := cardMap[value]; !exists {
@@ -324,7 +402,7 @@ func ExtractCreditCards(text string) []pii.PiiEntity {
 		}
 	}
 
-	var entities []pii.PiiEntity
+	entities := make([]pii.PiiEntity, 0, len(cardMap))
 	for _, card := range cardMap {
 		entities = append(entities, pii.PiiEntity{
 			Type:  pii.PiiTypeCreditCard,
@@ -336,14 +414,31 @@ func ExtractCreditCards(text string) []pii.PiiEntity {
 
 // ExtractIPAddresses extracts IP addresses as PiiEntity objects with context
 func ExtractIPAddresses(text string) []pii.PiiEntity {
-	ipMap := make(map[string]*pii.IPAddress)
+	// Estimate capacity based on typical IP density in text
+	estimatedIPs := len(text)/1500 + 3 // ~1 IP per 1500 chars
+	ipMap := make(map[string]*pii.IPAddress, estimatedIPs)
 
 	// Extract IPv4
 	ipv4Indices := patterns.MatchWithIndices(text, patterns.IPv4Regex)
+	ipv6Indices := patterns.MatchWithIndices(text, patterns.IPv6Regex)
+	
+	// Create context cache only if we have enough total matches to justify it
+	var contextCache *patterns.ContextCache
+	totalMatches := len(ipv4Indices) + len(ipv6Indices)
+	
+	if totalMatches >= 5 {
+		contextCache = patterns.NewContextCache(text)
+	}
+
 	for _, idx := range ipv4Indices {
 		start, end := idx[0], idx[1]
 		value := text[start:end]
-		context := patterns.ExtractContext(text, start, end)
+		var context string
+		if contextCache != nil {
+			context = contextCache.ExtractContext(start, end)
+		} else {
+			context = patterns.ExtractContext(text, start, end)
+		}
 
 		if ip, exists := ipMap[value]; exists {
 			ip.BasePii.IncrementCount()
@@ -361,11 +456,15 @@ func ExtractIPAddresses(text string) []pii.PiiEntity {
 	}
 
 	// Extract IPv6
-	ipv6Indices := patterns.MatchWithIndices(text, patterns.IPv6Regex)
 	for _, idx := range ipv6Indices {
 		start, end := idx[0], idx[1]
 		value := text[start:end]
-		context := patterns.ExtractContext(text, start, end)
+		var context string
+		if contextCache != nil {
+			context = contextCache.ExtractContext(start, end)
+		} else {
+			context = patterns.ExtractContext(text, start, end)
+		}
 
 		if ip, exists := ipMap[value]; exists {
 			ip.BasePii.IncrementCount()
@@ -382,7 +481,7 @@ func ExtractIPAddresses(text string) []pii.PiiEntity {
 		}
 	}
 
-	var entities []pii.PiiEntity
+	entities := make([]pii.PiiEntity, 0, len(ipMap))
 	for _, ip := range ipMap {
 		entities = append(entities, pii.PiiEntity{
 			Type:  pii.PiiTypeIPAddress,

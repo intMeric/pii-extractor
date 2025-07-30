@@ -120,6 +120,20 @@ func MatchWithIndices(text string, regex *regexp.Regexp) [][]int {
 	return regex.FindAllStringIndex(text, -1)
 }
 
+// ContextCache holds pre-computed text analysis for efficient context extraction
+type ContextCache struct {
+	text  string
+	words []string
+}
+
+// NewContextCache creates a new context cache for efficient repeated context extraction
+func NewContextCache(text string) *ContextCache {
+	return &ContextCache{
+		text:  text,
+		words: strings.Fields(text),
+	}
+}
+
 // ExtractContext extracts the context around a match, prioritizing full sentences over word count
 func ExtractContext(text string, start, end int) string {
 	// First try to find a complete sentence
@@ -130,6 +144,18 @@ func ExtractContext(text string, start, end int) string {
 
 	// Fallback to 8 words before and after
 	return extractWordContext(text, start, end)
+}
+
+// ExtractContextWithCache extracts context using pre-computed word cache for better performance
+func (cache *ContextCache) ExtractContext(start, end int) string {
+	// First try to find a complete sentence
+	sentence := extractSentence(cache.text, start, end)
+	if sentence != "" {
+		return strings.TrimSpace(sentence)
+	}
+
+	// Fallback to 8 words before and after using cached words
+	return cache.extractWordContextCached(start, end)
 }
 
 // extractSentence tries to extract a complete sentence containing the match
@@ -226,6 +252,59 @@ func extractWordContext(text string, start, end int) string {
 	contextEnd := min(len(words), wordEnd+8+1)
 
 	return strings.Join(words[contextStart:contextEnd], " ")
+}
+
+// extractWordContextCached extracts 8 words before and after using pre-computed words
+func (cache *ContextCache) extractWordContextCached(start, end int) string {
+	if len(cache.words) == 0 {
+		return ""
+	}
+
+	// Find the word indices that contain our match
+	wordStart := -1
+	wordEnd := -1
+	currentPos := 0
+
+	for i, word := range cache.words {
+		// Find the actual position of this word in the text
+		wordStartPos := strings.Index(cache.text[currentPos:], word)
+		if wordStartPos == -1 {
+			continue
+		}
+		wordStartPos += currentPos
+		wordEndPos := wordStartPos + len(word)
+
+		// Check if this word contains the start of our match
+		if wordStartPos <= start && start < wordEndPos {
+			wordStart = i
+		}
+		// Check if this word contains the end of our match  
+		if wordStartPos < end && end <= wordEndPos {
+			wordEnd = i
+		}
+
+		// Move to the position after this word for the next search
+		currentPos = wordEndPos
+		
+		// Skip whitespace
+		for currentPos < len(cache.text) && unicode.IsSpace(rune(cache.text[currentPos])) {
+			currentPos++
+		}
+
+		if wordStart != -1 && wordEnd != -1 {
+			break
+		}
+	}
+
+	if wordStart == -1 || wordEnd == -1 {
+		return ""
+	}
+
+	// Extract 8 words before and after
+	contextStart := max(0, wordStart-8)
+	contextEnd := min(len(cache.words), wordEnd+8+1)
+
+	return strings.Join(cache.words[contextStart:contextEnd], " ")
 }
 
 // International/generic convenience functions

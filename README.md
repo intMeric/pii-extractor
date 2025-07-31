@@ -14,7 +14,7 @@ A high-performance Go library for extracting and identifying Personally Identifi
 - **Spain**: Mainland and island postal codes (28013, 35001), street addresses
 - **Italy**: All valid postal codes (00186, 20100), street addresses
 - **Germany**: Phone numbers (+49 30 12345678), postal codes (10115), street addresses (Münchner Straße 15)
-- **China**: Phone numbers (+86 138 0013 8000), postal codes (100000), street addresses (北京市朝阳区建国门外大街1号)
+- **China**: Phone numbers (+86 138 0013 8000), postal codes (100000), street addresses (北京市朝阳区建国门外大街 1 号)
 - **India**: Phone numbers (+91 98765 43210), postal codes (110001), street addresses (123 MG Road)
 - **Arabic Countries**: Phone numbers (+966 50 123 4567), postal codes (12345), street addresses (شارع الملك فهد)
 - **Russia**: Phone numbers (+7 495 123-45-67), postal codes (101000), street addresses (ул. Тверская, д. 13)
@@ -39,11 +39,10 @@ A high-performance Go library for extracting and identifying Personally Identifi
 - **🤖 LLM Validation**: Optional validation using OpenAI, Anthropic, Gemini, Mistral, or Ollama
 - **🛡️ Type-Safe API**: Full Go type safety with convenient value objects
 
-
 ## 📦 Installation
 
 ```bash
-go get github.com/intMeric/pii-extractor@v0.1.0
+go get github.com/intMeric/pii-extractor@v0.1.1
 ```
 
 ### 🔄 Upgrading from v0.0.3
@@ -56,7 +55,7 @@ extractor := piiextractor.NewDefaultRegexExtractor() // Now 2.4x faster!
 
 // Performance optimizations are applied automatically:
 // ✅ Parallel processing for large documents
-// ✅ Context caching for repeated extractions  
+// ✅ Context caching for repeated extractions
 // ✅ Pre-allocated memory structures
 // ✅ Batch entity processing
 ```
@@ -282,18 +281,18 @@ func Get(name string) (PiiExtractor, error)
 
 ### PII Types
 
-| Type                   | Description             | Countries                    | Examples                             |
-| ---------------------- | ----------------------- | ---------------------------- | ------------------------------------ |
-| `PiiTypeEmail`         | Email addresses         | Global                       | `john@example.com`                   |
-| `PiiTypePhone`         | Phone numbers           | US, DE, CN, IN, AR, RU       | `(555) 123-4567`, `+49 30 12345678`, `+86 138 0013 8000` |
-| `PiiTypeSSN`           | Social Security Numbers | US                           | `123-45-6789`                        |
-| `PiiTypeZipCode`       | Postal/ZIP codes        | US, UK, FR, ES, IT, DE, CN, IN, AR, RU | `10001`, `SW1A 1AA`, `75001`, `10115`, `100000` |
+| Type                   | Description             | Countries                              | Examples                                                               |
+| ---------------------- | ----------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
+| `PiiTypeEmail`         | Email addresses         | Global                                 | `john@example.com`                                                     |
+| `PiiTypePhone`         | Phone numbers           | US, DE, CN, IN, AR, RU                 | `(555) 123-4567`, `+49 30 12345678`, `+86 138 0013 8000`               |
+| `PiiTypeSSN`           | Social Security Numbers | US                                     | `123-45-6789`                                                          |
+| `PiiTypeZipCode`       | Postal/ZIP codes        | US, UK, FR, ES, IT, DE, CN, IN, AR, RU | `10001`, `SW1A 1AA`, `75001`, `10115`, `100000`                        |
 | `PiiTypeStreetAddress` | Street addresses        | US, UK, FR, ES, IT, DE, CN, IN, AR, RU | `123 Main Street`, `Münchner Straße 15`, `北京市朝阳区建国门外大街1号` |
-| `PiiTypePoBox`         | P.O. Box addresses      | US                           | `P.O. Box 456`                       |
-| `PiiTypeCreditCard`    | Credit card numbers     | Global                       | `4111-1111-1111-1111`                |
-| `PiiTypeIPAddress`     | IP addresses            | Global                       | `192.168.1.1`, `::1`                 |
-| `PiiTypeBtcAddress`    | Bitcoin addresses       | Global                       | `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa` |
-| `PiiTypeIBAN`          | Bank account numbers    | Global                       | `GB82WEST12345698765432`             |
+| `PiiTypePoBox`         | P.O. Box addresses      | US                                     | `P.O. Box 456`                                                         |
+| `PiiTypeCreditCard`    | Credit card numbers     | Global                                 | `4111-1111-1111-1111`                                                  |
+| `PiiTypeIPAddress`     | IP addresses            | Global                                 | `192.168.1.1`, `::1`                                                   |
+| `PiiTypeBtcAddress`    | Bitcoin addresses       | Global                                 | `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa`                                   |
+| `PiiTypeIBAN`          | Bank account numbers    | Global                                 | `GB82WEST12345698765432`                                               |
 
 ### Result Methods
 
@@ -375,13 +374,13 @@ pii-extractor/
 
 ### Language Distribution
 
-| Region | Countries | PII Types | Unicode Scripts |
-|--------|-----------|-----------|-----------------|
-| **Western Europe** | Germany, UK, France, Spain, Italy | Phone, Address, Postal | Latin, German umlauts |
-| **Asia-Pacific** | China, India | Phone, Address, Postal | Chinese characters, Devanagari |
-| **Middle East** | Arabic Countries | Phone, Address, Postal | Arabic script (RTL) |
-| **Eastern Europe** | Russia | Phone, Address, Postal | Cyrillic |
-| **North America** | United States | Phone, SSN, Address, Postal, P.O. Box | Latin |
+| Region             | Countries                         | PII Types                             | Unicode Scripts                |
+| ------------------ | --------------------------------- | ------------------------------------- | ------------------------------ |
+| **Western Europe** | Germany, UK, France, Spain, Italy | Phone, Address, Postal                | Latin, German umlauts          |
+| **Asia-Pacific**   | China, India                      | Phone, Address, Postal                | Chinese characters, Devanagari |
+| **Middle East**    | Arabic Countries                  | Phone, Address, Postal                | Arabic script (RTL)            |
+| **Eastern Europe** | Russia                            | Phone, Address, Postal                | Cyrillic                       |
+| **North America**  | United States                     | Phone, SSN, Address, Postal, P.O. Box | Latin                          |
 
 ## 🔧 Development
 
@@ -451,7 +450,7 @@ go test -bench=. ./...
   - Enhanced `extractWithContext` generic function with pre-sized maps
   - Optimized false positive filtering with byte-level processing
   - Conditional optimization activation for maximum efficiency
-- **📈 Performance Results**: 
+- **📈 Performance Results**:
   - **Large documents**: 58.7% faster processing (2.4x improvement)
   - **Memory allocations**: 25.6% reduction in allocation count
   - **Throughput**: 10,000+ characters/second on typical hardware
@@ -461,7 +460,7 @@ go test -bench=. ./...
 
 - 🌍 **Major Multi-Language Expansion**: Added support for 5 new languages/countries
   - **🇩🇪 Germany**: Phone numbers (+49 30 12345678), postal codes (10115), street addresses (Münchner Straße 15)
-  - **🇨🇳 China**: Phone numbers (+86 138 0013 8000), postal codes (100000), street addresses (北京市朝阳区建国门外大街1号)
+  - **🇨🇳 China**: Phone numbers (+86 138 0013 8000), postal codes (100000), street addresses (北京市朝阳区建国门外大街 1 号)
   - **🇮🇳 India**: Phone numbers (+91 98765 43210), postal codes (110001), street addresses (123 MG Road)
   - **🇸🇦 Arabic Countries**: Phone numbers (+966 50 123 4567), postal codes (12345), street addresses (شارع الملك فهد)
   - **🇷🇺 Russia**: Phone numbers (+7 495 123-45-67), postal codes (101000), street addresses (ул. Тверская, д. 13)

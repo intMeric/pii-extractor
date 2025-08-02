@@ -134,73 +134,17 @@ func NewContextCache(text string) *ContextCache {
 	}
 }
 
-// ExtractContext extracts the context around a match, prioritizing full sentences over word count
+// ExtractContext extracts the context around a match using exactly 10 words before and after
 func ExtractContext(text string, start, end int) string {
-	// First try to find a complete sentence
-	sentence := extractSentence(text, start, end)
-	if sentence != "" {
-		return strings.TrimSpace(sentence)
-	}
-
-	// Fallback to 8 words before and after
 	return extractWordContext(text, start, end)
 }
 
 // ExtractContextWithCache extracts context using pre-computed word cache for better performance
 func (cache *ContextCache) ExtractContext(start, end int) string {
-	// First try to find a complete sentence
-	sentence := extractSentence(cache.text, start, end)
-	if sentence != "" {
-		return strings.TrimSpace(sentence)
-	}
-
-	// Fallback to 8 words before and after using cached words
 	return cache.extractWordContextCached(start, end)
 }
 
-// extractSentence tries to extract a complete sentence containing the match
-func extractSentence(text string, start, end int) string {
-	// Find sentence boundaries (., !, ?, or start/end of text)
-	sentenceStart := start
-	sentenceEnd := end
-
-	// Look backwards for sentence start
-	for i := start - 1; i >= 0; i-- {
-		char := text[i]
-		if char == '.' || char == '!' || char == '?' {
-			sentenceStart = i + 1
-			break
-		}
-		if i == 0 {
-			sentenceStart = 0
-		}
-	}
-
-	// Look forwards for sentence end
-	for i := end; i < len(text); i++ {
-		char := text[i]
-		if char == '.' || char == '!' || char == '?' {
-			sentenceEnd = i + 1
-			break
-		}
-		if i == len(text)-1 {
-			sentenceEnd = len(text)
-		}
-	}
-
-	// Skip whitespace at the beginning
-	for sentenceStart < len(text) && unicode.IsSpace(rune(text[sentenceStart])) {
-		sentenceStart++
-	}
-
-	if sentenceStart < sentenceEnd && sentenceEnd <= len(text) {
-		return text[sentenceStart:sentenceEnd]
-	}
-
-	return ""
-}
-
-// extractWordContext extracts 8 words before and after the match
+// extractWordContext extracts 10 words before and after the match
 func extractWordContext(text string, start, end int) string {
 	words := strings.Fields(text)
 	if len(words) == 0 {
@@ -225,14 +169,14 @@ func extractWordContext(text string, start, end int) string {
 		if wordStartPos <= start && start < wordEndPos {
 			wordStart = i
 		}
-		// Check if this word contains the end of our match  
+		// Check if this word contains the end of our match
 		if wordStartPos < end && end <= wordEndPos {
 			wordEnd = i
 		}
 
 		// Move to the position after this word for the next search
 		currentPos = wordEndPos
-		
+
 		// Skip whitespace
 		for currentPos < len(text) && unicode.IsSpace(rune(text[currentPos])) {
 			currentPos++
@@ -247,14 +191,23 @@ func extractWordContext(text string, start, end int) string {
 		return ""
 	}
 
-	// Extract 8 words before and after
-	contextStart := max(0, wordStart-8)
-	contextEnd := min(len(words), wordEnd+8+1)
+	// Extract 10 words before and after
+	contextStart := max(0, wordStart-10)
+	contextEnd := min(len(words), wordEnd+10+1)
 
-	return strings.Join(words[contextStart:contextEnd], " ")
+	context := strings.Join(words[contextStart:contextEnd], " ")
+	// Clean up the context by trimming whitespace and removing newlines
+	context = strings.ReplaceAll(context, "\n", " ")
+	context = strings.ReplaceAll(context, "\r", " ")
+	context = strings.ReplaceAll(context, "\t", " ")
+	// Replace multiple spaces with single space
+	for strings.Contains(context, "  ") {
+		context = strings.ReplaceAll(context, "  ", " ")
+	}
+	return strings.TrimSpace(context)
 }
 
-// extractWordContextCached extracts 8 words before and after using pre-computed words
+// extractWordContextCached extracts 10 words before and after using pre-computed words
 func (cache *ContextCache) extractWordContextCached(start, end int) string {
 	if len(cache.words) == 0 {
 		return ""
@@ -278,14 +231,14 @@ func (cache *ContextCache) extractWordContextCached(start, end int) string {
 		if wordStartPos <= start && start < wordEndPos {
 			wordStart = i
 		}
-		// Check if this word contains the end of our match  
+		// Check if this word contains the end of our match
 		if wordStartPos < end && end <= wordEndPos {
 			wordEnd = i
 		}
 
 		// Move to the position after this word for the next search
 		currentPos = wordEndPos
-		
+
 		// Skip whitespace
 		for currentPos < len(cache.text) && unicode.IsSpace(rune(cache.text[currentPos])) {
 			currentPos++
@@ -300,11 +253,20 @@ func (cache *ContextCache) extractWordContextCached(start, end int) string {
 		return ""
 	}
 
-	// Extract 8 words before and after
-	contextStart := max(0, wordStart-8)
-	contextEnd := min(len(cache.words), wordEnd+8+1)
+	// Extract 10 words before and after
+	contextStart := max(0, wordStart-10)
+	contextEnd := min(len(cache.words), wordEnd+10+1)
 
-	return strings.Join(cache.words[contextStart:contextEnd], " ")
+	context := strings.Join(cache.words[contextStart:contextEnd], " ")
+	// Clean up the context by trimming whitespace and removing newlines
+	context = strings.ReplaceAll(context, "\n", " ")
+	context = strings.ReplaceAll(context, "\r", " ")
+	context = strings.ReplaceAll(context, "\t", " ")
+	// Replace multiple spaces with single space
+	for strings.Contains(context, "  ") {
+		context = strings.ReplaceAll(context, "  ", " ")
+	}
+	return strings.TrimSpace(context)
 }
 
 // International/generic convenience functions

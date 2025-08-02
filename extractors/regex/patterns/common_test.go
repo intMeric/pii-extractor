@@ -243,14 +243,14 @@ func TestExtractContext(t *testing.T) {
 			text:     "This is the first sentence. Contact me at john@example.com for details. This is the last sentence.",
 			start:    39,
 			end:      55,
-			expected: "Contact me at john@example.com for details.",
+			expected: "This is the first sentence. Contact me at john@example.com for details. This is the last sentence.",
 		},
 		{
 			name:     "extract from beginning of text",
 			text:     "Email john@example.com today! More text follows.",
 			start:    6,
 			end:      22,
-			expected: "Email john@example.com today!",
+			expected: "Email john@example.com today! More text follows.",
 		},
 		{
 			name:     "extract from end of text",

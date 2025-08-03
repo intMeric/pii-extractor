@@ -2,7 +2,7 @@
 
 A high-performance Go library for extracting and identifying Personally Identifiable Information (PII) from text data. Features **multi-country support across 10 languages**, intelligent deduplication, and **2.4x faster processing** with advanced optimizations.
 
-> **🚀 NEW in v0.1.0**: **Performance Revolution** - Optimized RegexExtractor with parallel processing, context caching, and memory optimizations for **enterprise-grade performance** on large documents!
+> **🚀 NEW in v0.2.0**: Update PII context extration (10 words before & after PII)
 
 ## 🚀 Features
 
@@ -42,22 +42,7 @@ A high-performance Go library for extracting and identifying Personally Identifi
 ## 📦 Installation
 
 ```bash
-go get github.com/intMeric/pii-extractor@v0.1.1
-```
-
-### 🔄 Upgrading from v0.0.3
-
-The v0.1.0 upgrade is **fully backward compatible**. Your existing code will continue to work without changes while automatically benefiting from **2.4x performance improvements**:
-
-```go
-// Existing code automatically gets performance boost
-extractor := piiextractor.NewDefaultRegexExtractor() // Now 2.4x faster!
-
-// Performance optimizations are applied automatically:
-// ✅ Parallel processing for large documents
-// ✅ Context caching for repeated extractions
-// ✅ Pre-allocated memory structures
-// ✅ Batch entity processing
+go get github.com/intMeric/pii-extractor@v0.2.0
 ```
 
 ## Quick Start
@@ -362,6 +347,10 @@ pii-extractor/
 ```
 
 ## 📊 Performance & Coverage
+
+### v0.2.0 Context extraction
+
+Update context extraction
 
 ### v0.1.0 Performance Metrics
 
